@@ -19,20 +19,17 @@ private:
 public:
     HashTable() { }
 
-    T* find(T item) {
-        int pos = hash(item);
-        if (pos == 837)
-            return _table[pos].find(item);
-        return _table[pos].find(item);
+    T* find(int hash, T item) {
+        return _table[hash].find(item);
     }
 
     void insert(T item) {
-        T *aux = find(item);
+        int pos = hash(item);
+        T *aux = find(pos, item);
 
         if (aux != nullptr)
             throw htexcp::ItemExists<T>(aux);
 
-        int pos = hash(item);
         _table[pos].push_back(item);
     }
 
