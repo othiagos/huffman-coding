@@ -46,8 +46,6 @@ void Compactor::count_char(std::ifstream *file, HashTable<TreeNodeChar> *result)
     }
 }
 
-#include <iostream>
-
 void Compactor::compress(char *file_path) {
     std::ifstream file;
     HashTable<TreeNodeChar> table;
@@ -58,8 +56,9 @@ void Compactor::compress(char *file_path) {
 
     count_char(&file, &table);
     LinkedList<TreeNodeChar> list;
-    
+
     table.get_list(list);
+    QuickSort::sort(list);
 
     // huffalgorithms
     // writefilecompress

@@ -1,12 +1,13 @@
 #pragma once
 
-#include <string>
-#include <iostream>
-#include <fstream>
 #include <cmath>
+#include <fstream>
+#include <iostream>
+#include <string>
 
-#include <HashTable.hpp>
-#include <TreeNodeChar.hpp>
+#include "HashTable.hpp"
+#include "TreeNodeChar.hpp"
+#include "QuickSort.hpp"
 
 #define UTF8_ENCODING_1BYTE 0x00
 #define UTF8_ENCODING_2BYTE 0x06
@@ -23,6 +24,6 @@ private:
     static void count_char(std::ifstream *file, HashTable<TreeNodeChar> *result);
 
 public:
-    static void compress(char* file_path);
+    static void compress(char *file_path);
     static void uncompress(char *file_path);
 };
