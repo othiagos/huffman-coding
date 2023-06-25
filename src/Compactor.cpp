@@ -46,6 +46,33 @@ void Compactor::count_char(std::ifstream *file, HashTable<TreeNodeChar> *result)
     }
 }
 
+void Compactor::huffman_algorithm(LinkedList<TreeNodeChar> &list) {
+   TreeNodeChar x;
+   TreeNodeChar y;
+   TreeNodeChar z;
+
+    int i;
+    while (list.size() != 1) {
+        x = list.pop_front();
+        y = list.pop_front();
+        z = TreeNodeChar(x.get_count() + y.get_count(), x, y);
+
+        for (i = 0; i < list.size(); i++) {
+            if (list[i].get_count() >= z.get_count()) {
+                list.insert(z, i);
+                break;
+            }
+            else if (i + 1 == list.size()) {
+                list.push_back(z);
+                break;
+            }
+        }
+
+        if (list.size() == 0)
+            list.push_back(z);
+    }
+}
+
 void Compactor::compress(char *file_path) {
     std::ifstream file;
     HashTable<TreeNodeChar> table;
@@ -55,12 +82,12 @@ void Compactor::compress(char *file_path) {
         throw "Could not open the file!";
 
     count_char(&file, &table);
-    LinkedList<TreeNodeChar> list;
 
+    LinkedList<TreeNodeChar> list;
     table.get_list(list);
     QuickSort::sort(list);
 
-    // huffalgorithms
+    huff_algorithms(list);
     // writefilecompress
 
     file.close();

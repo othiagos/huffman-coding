@@ -22,6 +22,7 @@
 class Compactor {
 private:
     static void count_char(std::ifstream *file, HashTable<TreeNodeChar> *result);
+    static void huffman_algorithm(LinkedList<TreeNodeChar> &list);
 
 public:
     static void compress(char *file_path);
