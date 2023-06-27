@@ -73,3 +73,11 @@ std::string TreeNodeChar::get_chars() const {
 unsigned int TreeNodeChar::get_count() const {
     return this->_count;
 }
+
+TreeNodeChar *TreeNodeChar::get_right() {
+    return this->_right;
+}
+
+TreeNodeChar *TreeNodeChar::get_left() {
+    return this->_left;
+}

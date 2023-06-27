@@ -25,4 +25,6 @@ public:
     TreeNodeChar& operator=(const TreeNodeChar& o);
     std::string get_chars() const;
     unsigned int get_count() const;
+    TreeNodeChar *get_right();
+    TreeNodeChar *get_left();
 };

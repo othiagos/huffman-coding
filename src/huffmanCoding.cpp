@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
             break;
 
         case 'd':
-            Compactor::uncompress(optarg);
+            Compactor::decompress(optarg);
             break;
         
         default:

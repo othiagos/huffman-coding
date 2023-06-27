@@ -14,7 +14,7 @@ EXE_TEST = $(BIN_DIR)/$(TEST_NAME)
 OBJS = \
 	$(OBJ_DIR)/Compactor.o \
 	$(OBJ_DIR)/TreeNodeChar.o \
-	$(OBJ_DIR)/QuickSort.o \
+	$(OBJ_DIR)/QuickSort.o
 
 TEST_OBJS = \
 	$(OBJ_DIR)/TestLinkedList.o

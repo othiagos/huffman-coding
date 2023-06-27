@@ -73,6 +73,39 @@ void Compactor::huffman_algorithm(LinkedList<TreeNodeChar> &list) {
     }
 }
 
+#include <iostream>
+
+void Compactor::in_order(LinkedList<table> &table_char, std::string &bits, TreeNodeChar *tree) {
+    if(tree->get_right() != nullptr) {
+        bits.push_back('0');
+        in_order(table_char, bits, tree->get_right());
+        bits.pop_back();
+    }
+
+    if(tree->get_left() != nullptr) {
+        bits.push_back('1');
+        in_order(table_char, bits, tree->get_left());
+        bits.pop_back();
+    }
+
+    if (tree->get_left() == tree->get_right())
+        table_char.push_back({tree->get_chars(), bits});
+}
+
+void Compactor::write_file_compress(std::ifstream *file, TreeNodeChar *tree, LinkedList<TreeNodeChar> *list) {
+    std::string bits = "";
+    LinkedList<table> table_char;
+    
+    in_order(table_char, bits, tree);
+
+    for (table chars : table_char) {
+        if (chars.chars == "\n")
+            std::cout << "\\n" << ": " << chars.encoding<< bits << std::endl;
+        else
+            std::cout << chars.chars << ": " << chars.encoding << std::endl;
+    }
+}
+
 void Compactor::compress(char *file_path) {
     std::ifstream file;
     HashTable<TreeNodeChar> table;
@@ -87,11 +120,27 @@ void Compactor::compress(char *file_path) {
     table.get_list(list);
     QuickSort::sort(list);
 
-    huff_algorithms(list);
-    // writefilecompress
+    LinkedList<TreeNodeChar> tree = LinkedList<TreeNodeChar>(list);
+    huffman_algorithm(tree);
+    write_file_compress(&file, &tree[0], &list);
 
     file.close();
 }
 
-void Compactor::uncompress(char *file_path) {
+void Compactor::decompress(std::string file_path) {
+    // std::string filename = file_path.substr(0, file_path.find("."));
+    // std::ofstream new_file(filename + ".tzip", std::ios::out | std::ios::binary);
+
+    //  char a = 0;
+    //  char b = 1;
+    // std::bitset<sizeof(a)> bits(a);
+    // unsigned long binary_value = bits.to_ulong();
+
+    // bool b[2] = {0,1};
+
+    // new_file.write((char *) &a, sizeof(char));
+    // new_file.write((char *) &b, sizeof(char));
+
+    // new_file.close();
+
 }
