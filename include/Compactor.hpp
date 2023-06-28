@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <cstring>
 #include <bitset>
 
 #include "HashTable.hpp"
@@ -29,10 +30,12 @@ class Compactor {
 private:
     static void count_char(std::ifstream *file, HashTable<TreeNodeChar> *result);
     static void huffman_algorithm(LinkedList<TreeNodeChar> &list);
-    static void in_order(LinkedList<table> &table_char, std::string &bits, TreeNodeChar *tree);
-    static void write_file_compress(std::ifstream *file, TreeNodeChar *tree, LinkedList<TreeNodeChar> *list);
+    static void in_order(LinkedList<table> &table_char, std::string &bits, unsigned int &bytes_size, TreeNodeChar *tree);
+    static void write_file_compress(std::ifstream *file, TreeNodeChar *tree, LinkedList<TreeNodeChar> &list, std::string filename);
+    static void reverse_byte(std::string &str);
+    static void reverse_str(std::string &str);
 
 public:
-    static void compress(char *file_path);
+    static void compress(std::string file_path);
     static void decompress(std::string file_path);
 };
