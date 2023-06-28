@@ -73,24 +73,23 @@ void Compactor::huffman_algorithm(LinkedList<TreeNodeChar> &list) {
     }
 }
 
-#include <iostream>
-
-void Compactor::in_order(LinkedList<table> &table_char, std::string &bits, unsigned int &bytes_size, TreeNodeChar *tree) {
+void Compactor::in_order(LinkedList<table> &table_char, std::string &bits, unsigned int &bit_len, unsigned int &bytes_size, TreeNodeChar *tree) {
     if(tree->get_right() != nullptr) {
         bits.push_back('0');
-        in_order(table_char, bits,bytes_size, tree->get_right());
+        in_order(table_char, bits, bit_len, bytes_size, tree->get_right());
         bits.pop_back();
     }
 
     if(tree->get_left() != nullptr) {
         bits.push_back('1');
-        in_order(table_char, bits, bytes_size, tree->get_left());
+        in_order(table_char, bits, bit_len, bytes_size, tree->get_left());
         bits.pop_back();
     }
 
     if (tree->get_left() == tree->get_right()) {
         table_char.push_back({tree->get_chars(), bits});
         bytes_size += tree->get_chars().length();
+        bit_len += bits.size() * tree->get_count();
     }
 }
 
@@ -125,7 +124,7 @@ void Compactor::write_file_compress(std::ifstream *file, TreeNodeChar *tree, Lin
     LinkedList<table> table_char;
     unsigned int bytes_size = list.size();
     unsigned int max_item = list[list.size() - 1].get_count();
-    unsigned int len;
+    unsigned int len, bit_len = 0;
 
     file->seekg(0, file->end);
     len = file->tellg();
@@ -134,7 +133,7 @@ void Compactor::write_file_compress(std::ifstream *file, TreeNodeChar *tree, Lin
     u_char buffer[len];
     file->read((char *)buffer, len);
     
-    in_order(table_char, bits, bytes_size, tree);
+    in_order(table_char, bits, bit_len, bytes_size, tree);
 
     char size = 0;
 
@@ -160,6 +159,8 @@ void Compactor::write_file_compress(std::ifstream *file, TreeNodeChar *tree, Lin
         new_file.write((char *) &i, size);
     }
 
+    new_file.write((char *) &bit_len, sizeof(uint32_t));
+
     std::string bit_string = "";
     for (i = 0; i < (int) len; i++) {
         for (table s : table_char) {
@@ -172,7 +173,6 @@ void Compactor::write_file_compress(std::ifstream *file, TreeNodeChar *tree, Lin
                     std::string aux = s.encoding;
                     reverse_str(aux);
                     bit_string = aux + bit_string;
-                    std::cout << s.encoding;
                 }
 
             }
@@ -184,7 +184,6 @@ void Compactor::write_file_compress(std::ifstream *file, TreeNodeChar *tree, Lin
                     std::string aux = s.encoding;
                     reverse_str(aux);
                     bit_string = aux + bit_string;
-                    std::cout << s.encoding;
                     i += 1;
                 }
 
@@ -197,7 +196,6 @@ void Compactor::write_file_compress(std::ifstream *file, TreeNodeChar *tree, Lin
                     std::string aux = s.encoding;
                     reverse_str(aux);
                     bit_string = aux + bit_string;
-                    std::cout << s.encoding;
                     i += 2;
                 }
 
@@ -210,7 +208,6 @@ void Compactor::write_file_compress(std::ifstream *file, TreeNodeChar *tree, Lin
                     std::string aux = s.encoding;
                     reverse_str(aux);
                     bit_string = aux + bit_string;
-                    std::cout << s.encoding;
                 }
                 i += 3;
             }
@@ -283,8 +280,9 @@ void Compactor::decompress(std::string file_path) {
     LinkedList<TreeNodeChar> list;
     TreeNodeChar t;
     u_char buffer[len];
+    u_int32_t sum_freq;
     file.read((char *) buffer, len);
-    for (int i = 0; i < len; i++) {
+    for (int i = 0; i < (int) len; i++) {
 
         if (buffer[i] >> DISCARD_7BIT == UTF8_ENCODING_1BYTE) {
             t.set_chars({(char) buffer[i]});
@@ -320,7 +318,32 @@ void Compactor::decompress(std::string file_path) {
 
     std::ofstream new_file(std::string(filename) + "(1).txt", std::ios::out | std::ios::binary);
 
+    if (!new_file.is_open())
+        throw "Could not open the file!";
 
+    file.read((char *)&sum_freq, sizeof(uint32_t));
+    file.read((char *)buffer, ceil(sum_freq / 8.0));
+
+    TreeNodeChar *tree = &list[0];
+    uint32_t count_bits = 0;
+    for (int i = 0; i < ceil(sum_freq / 8.0); i++) {
+        for (int j = 0; j < 8 && count_bits <= sum_freq; j++) {
+            if (tree->get_chars() != "") {
+                new_file.write(tree->get_chars().c_str(), tree->get_chars().size() * sizeof(char));
+                tree = &list[0];
+            }
+
+            if (buffer[i] >> (7 - j) & 1) {
+                if (tree->get_left() != nullptr)
+                    tree = tree->get_left();
+            }
+            else {
+                if (tree->get_right() != nullptr)
+                    tree = tree->get_right();
+            }
+            count_bits++;
+        }
+    }
 
     delete[] filename;
 

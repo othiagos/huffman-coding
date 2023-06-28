@@ -35,7 +35,7 @@ class Compactor {
 private:
     static void count_char(std::ifstream *file, HashTable<TreeNodeChar> *result);
     static void huffman_algorithm(LinkedList<TreeNodeChar> &list);
-    static void in_order(LinkedList<table> &table_char, std::string &bits, unsigned int &bytes_size, TreeNodeChar *tree);
+    static void in_order(LinkedList<table> &table_char, std::string &bits, unsigned int &bit_len, unsigned int &bytes_size, TreeNodeChar *tree);
     static void write_file_compress(std::ifstream *file, TreeNodeChar *tree, LinkedList<TreeNodeChar> &list, std::string filename);
     static void reverse_byte(std::string &str);
     static void reverse_str(std::string &str);
