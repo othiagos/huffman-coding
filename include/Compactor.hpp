@@ -21,6 +21,11 @@
 #define DISCARD_4BIT 4
 #define DISCARD_3BIT 3
 
+#define LEN_1BYTE 7
+#define LEN_2BYTE 15
+#define LEN_3BYTE 23
+#define LEN_4BYTE 31
+
 struct table {
     std::string chars;
     std::string encoding;

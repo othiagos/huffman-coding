@@ -120,7 +120,7 @@ void Compactor::reverse_str(std::string &str) {
     }
 }
 
-void Compactor::write_file_compress(std::ifstream *file, TreeNodeChar *tree, LinkedList<TreeNodeChar> &list, std::string filename) {
+void Compactor::write_file_compress(std::ifstream *file, TreeNodeChar *tree, LinkedList<TreeNodeChar> &list, std::string file_path) {
     std::string bits = "";
     LinkedList<table> table_char;
     unsigned int bytes_size = list.size();
@@ -137,13 +137,20 @@ void Compactor::write_file_compress(std::ifstream *file, TreeNodeChar *tree, Lin
     in_order(table_char, bits, bytes_size, tree);
 
     char size = 0;
-    if (max_item >> 7 == 0) size = 1;
-    else if (max_item >> 15 == 0) size = 2;
-    else if (max_item >> 27 == 0) size = 3;
-    else if (max_item >> 31 == 0) size = 4;
+
+    std::string filename = file_path.substr(0, file_path.find("."));
 
     std::ofstream new_file(filename + ".tzip", std::ios::out | std::ios::binary);
-    new_file.write((char *) &size, size);
+    size = file_path.size(); 
+    new_file.write((char*) &size, sizeof(char));
+    new_file.write(file_path.c_str(), size * sizeof(char));
+
+    if (max_item >> LEN_1BYTE == 0) size = 1;
+    else if (max_item >> LEN_2BYTE == 0) size = 2;
+    else if (max_item >> LEN_3BYTE == 0) size = 3;
+    else if (max_item >> LEN_4BYTE == 0) size = 4;
+
+    new_file.write((char *) &size, sizeof(char));
     new_file.write((char *) &bytes_size, sizeof(unsigned int));
 
     int i;
@@ -157,16 +164,55 @@ void Compactor::write_file_compress(std::ifstream *file, TreeNodeChar *tree, Lin
     for (i = 0; i < (int) len; i++) {
         for (table s : table_char) {
 
-            //fix
-            if ((char)buffer[i] == (char)s.chars[0]) {
-                std::string aux = s.encoding;
-                reverse_str(aux);
-                bit_string = aux + bit_string;
+            if (buffer[i] >> DISCARD_7BIT == UTF8_ENCODING_1BYTE && s.chars.size() == 1) {
+                char str[2] = {(char) buffer[i], '\0'};
+                std::string code_point(str);
 
-                std::cout << s.encoding;
+                if (code_point == s.chars) {
+                    std::string aux = s.encoding;
+                    reverse_str(aux);
+                    bit_string = aux + bit_string;
+                    std::cout << s.encoding;
+                }
 
-                if (s.chars.size() > 1)
-                    i += s.chars.size() - 1;
+            }
+            else if (buffer[i] >> DISCARD_5BIT == UTF8_ENCODING_2BYTE && s.chars.size() == 2) {
+                char str[3] = {(char) buffer[i], (char) buffer[i + 1], '\0'};
+                std::string code_point(str);
+                
+                if (code_point == s.chars) {
+                    std::string aux = s.encoding;
+                    reverse_str(aux);
+                    bit_string = aux + bit_string;
+                    std::cout << s.encoding;
+                    i += 1;
+                }
+
+            }
+            else if (buffer[i] >> DISCARD_4BIT == UTF8_ENCODING_3BYTE && s.chars.size() == 3) {
+                char str[4] = {(char) buffer[i],(char) buffer[i + 1], (char) buffer[i + 2], '\0'};
+                std::string code_point(str);
+                
+                if (code_point == s.chars) {
+                    std::string aux = s.encoding;
+                    reverse_str(aux);
+                    bit_string = aux + bit_string;
+                    std::cout << s.encoding;
+                    i += 2;
+                }
+
+            }
+            else if (buffer[i] >> DISCARD_3BIT == UTF8_ENCODING_4BYTE && s.chars.size() == 4) {
+                char str[5] = {(char) buffer[i],(char) buffer[i + 1],(char) buffer[i + 2],(char) buffer[i + 3], '\0'};
+                std::string code_point(str);
+                
+                if (code_point == s.chars) {
+                    std::string aux = s.encoding;
+                    reverse_str(aux);
+                    bit_string = aux + bit_string;
+                    std::cout << s.encoding;
+                }
+                i += 3;
             }
 
             if (bit_string.size() > 32) {
@@ -195,14 +241,11 @@ void Compactor::write_file_compress(std::ifstream *file, TreeNodeChar *tree, Lin
 
         new_file.write((char *) &c, bit_string.size() / 8);
     }
-
-    std::cout << std::endl;
 }
 
 void Compactor::compress(std::string file_path) {
     std::ifstream file;
     HashTable<TreeNodeChar> table;
-    std::string filename = file_path.substr(0, file_path.find("."));
 
     file.open(file_path);
     if (!file.is_open())
@@ -216,7 +259,7 @@ void Compactor::compress(std::string file_path) {
 
     LinkedList<TreeNodeChar> tree = LinkedList<TreeNodeChar>(list);
     huffman_algorithm(tree);
-    write_file_compress(&file, &tree[0], list, filename);
+    write_file_compress(&file, &tree[0], list, file_path);
 
     file.close();
 }
