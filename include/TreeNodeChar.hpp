@@ -24,7 +24,9 @@ public:
     bool operator==(const TreeNodeChar& o);
     TreeNodeChar& operator=(const TreeNodeChar& o);
     std::string get_chars() const;
+    void set_chars(std::string value);
     unsigned int get_count() const;
+    void set_count(unsigned int value);
     TreeNodeChar *get_right();
     TreeNodeChar *get_left();
 };

@@ -70,8 +70,16 @@ std::string TreeNodeChar::get_chars() const {
     return this->_chars;
 }
 
+void TreeNodeChar::set_chars(std::string value) {
+    this->_chars = value;
+}
+
 unsigned int TreeNodeChar::get_count() const {
     return this->_count;
+}
+
+void TreeNodeChar::set_count(unsigned int value) {
+    this->_count = value;
 }
 
 TreeNodeChar *TreeNodeChar::get_right() {

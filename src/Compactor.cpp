@@ -265,4 +265,65 @@ void Compactor::compress(std::string file_path) {
 }
 
 void Compactor::decompress(std::string file_path) {
+    std::ifstream file(file_path, std::ios::in | std::ios::binary);
+
+    if (!file.is_open())
+        throw "Could not open the file!";
+
+    uint8_t size = 0;
+    file.read((char *) &size, sizeof(uint8_t));
+
+    char *filename = new char[size];
+    file.read(filename, size);
+
+    file.read((char *) &size, sizeof(uint8_t));
+    uint32_t len;
+    file.read((char *) &len, sizeof(uint32_t));
+
+    LinkedList<TreeNodeChar> list;
+    TreeNodeChar t;
+    u_char buffer[len];
+    file.read((char *) buffer, len);
+    for (int i = 0; i < len; i++) {
+
+        if (buffer[i] >> DISCARD_7BIT == UTF8_ENCODING_1BYTE) {
+            t.set_chars({(char) buffer[i]});
+            t.set_count(buffer[i + 1]);
+
+            list.push_back(t);
+            i += 1;
+        }
+        else if (buffer[i] >> DISCARD_5BIT == UTF8_ENCODING_2BYTE) {
+            t.set_chars({(char) buffer[i], (char) buffer[i + 1]});
+            t.set_count(buffer[i + 2]);
+
+            list.push_back(t);
+            i += 2;
+        }
+        else if (buffer[i] >> DISCARD_4BIT == UTF8_ENCODING_3BYTE) {
+            t.set_chars({(char) buffer[i],(char) buffer[i + 1], (char) buffer[i + 2]});
+            t.set_count(buffer[i + 3]);
+
+            list.push_back(t);
+            i += 3;
+        }
+        else if (buffer[i] >> DISCARD_3BIT == UTF8_ENCODING_4BYTE) {
+            t.set_chars({(char) buffer[i],(char) buffer[i + 1], (char) buffer[i + 2], (char) buffer[i + 3]});
+            t.set_count(buffer[i + 4]);
+
+            list.push_back(t);
+            i += 4;
+        }
+    }
+
+    huffman_algorithm(list);
+
+    std::ofstream new_file(std::string(filename) + "(1).txt", std::ios::out | std::ios::binary);
+
+
+
+    delete[] filename;
+
+    new_file.close();
+    file.close();
 }
