@@ -13,7 +13,7 @@
 #include "CompactorExcp.hpp"
 
 // #define BUFFER_SIZE 4096
-#define BUFFER_SIZE 4
+#define BUFFER_SIZE 10
 
 #define UTF8_ENCODING_1BYTE 0x00
 #define UTF8_ENCODING_2BYTE 0x06

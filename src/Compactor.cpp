@@ -26,7 +26,7 @@ void Compactor::count_char(string file_path, HashTable<TreeNodeChar> *result) {
             }
             else if (buffer[b_index] >> DISCARD_5BIT == UTF8_ENCODING_2BYTE) {
                 if (b_index + 1 >= BUFFER_SIZE)
-                    throw compexcp::BufferEnd(1);
+                    throw compexcp::BufferEnd((b_index + 2) % BUFFER_SIZE);
 
                 string str({(char) buffer[b_index], (char) buffer[b_index + 1]});
 
@@ -36,7 +36,7 @@ void Compactor::count_char(string file_path, HashTable<TreeNodeChar> *result) {
             }
             else if (buffer[b_index] >> DISCARD_4BIT == UTF8_ENCODING_3BYTE) {
                 if (b_index + 2 >= BUFFER_SIZE)
-                    throw compexcp::BufferEnd(2);
+                    throw compexcp::BufferEnd((b_index + 3) % BUFFER_SIZE);
 
                 string str({(char) buffer[b_index],(char) buffer[b_index + 1],
                     (char) buffer[b_index + 2]});
@@ -47,7 +47,7 @@ void Compactor::count_char(string file_path, HashTable<TreeNodeChar> *result) {
             }
             else if (buffer[b_index] >> DISCARD_3BIT == UTF8_ENCODING_4BYTE) {
                 if (b_index + 3 >= BUFFER_SIZE)
-                    throw compexcp::BufferEnd(b_index + 3);
+                    throw compexcp::BufferEnd((b_index + 4) % BUFFER_SIZE);
                 string str({(char) buffer[b_index],(char) buffer[b_index + 1],
                     (char) buffer[b_index + 2], (char) buffer[b_index + 3]});
 
@@ -75,6 +75,8 @@ void Compactor::count_char(string file_path, HashTable<TreeNodeChar> *result) {
                 i++;
                 b_index++;
             }
+
+            i--;
 
             try {
                 result->insert(TreeNodeChar(str));
@@ -308,7 +310,7 @@ void Compactor::compress(std::string file_path) {
 
     LinkedList<TreeNodeChar> tree = LinkedList<TreeNodeChar>(list);
     huffman_algorithm(tree);
-    // write_file_compress(&tree[0], list, file_path);
+    write_file_compress(file_path, &tree[0], list);
 }
 
 void Compactor::decompress(std::string file_path) {
