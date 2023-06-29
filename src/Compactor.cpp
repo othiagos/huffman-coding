@@ -6,8 +6,8 @@ void Compactor::count_char(string file_path, HashTable<TreeNodeChar> *result) {
     if (!file.is_open())
         throw compexcp::CouldntOpenFile();
     
-    uint64_t file_size;
-    uint16_t b_index;
+    uint64_t file_size = 0;
+    uint16_t b_index = 0;
 
     file.seekg(0, file.end);
     file_size = file.tellg();
@@ -174,10 +174,14 @@ void Compactor::reverse_str(std::string &str) {
 
 uint8_t Compactor::str2byte(string &str) {
     string substr = str.substr(0, 8);
-    str = str.substr(8, str.size() - 1);
+    
+    if (str.size() > 7)
+        str = str.substr(8, str.size() - 1);
+    else
+        str = "";
 
     uint8_t byte = 0;
-    for (uint8_t i = 0; i < 8; i++) {
+    for (uint8_t i = 0; i < substr.size(); i++) {
         if (substr[i] == '1')
             byte += pow(2, 7 - i);
     }
@@ -201,7 +205,7 @@ void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, Linked
     std::ofstream new_file(filename + ".tzip", std::ios::out | std::ios::binary);
     if (!new_file.is_open())
         throw compexcp::CouldntOpenFile();
-    
+
     size = file_path.size(); 
     new_file.write((char*) &size, sizeof(char));
     new_file.write(file_path.c_str(), size * sizeof(char));
@@ -331,14 +335,14 @@ void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, Linked
             uint64_t ti = i, tb = br_index;
             string str;
             while (tb < BUFFER_SIZE) {
-                str.push_back(buffer_read[br_index]);
+                str.push_back(buffer_read[tb]);
                 tb++;
                 ti++;
             }
             
             tb = 0;
             while (tb < e.get_overflow_size()) {
-                str.push_back(temp_buffer[br_index]);
+                str.push_back(temp_buffer[tb]);
                 tb++;
                 ti++;
             }
@@ -360,26 +364,7 @@ void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, Linked
             buffer_read = temp_buffer;
         }
 
-        // if (bit_string.size() > 32) {
-        //     std::string bit_s = bit_string.substr(bit_string.size() - 32, 32);
-        //     reverse_byte(bit_s);
-
-        //     std::bitset<sizeof(bit_s)> b(bit_s);
-        //     unsigned long c = b.to_ulong();
-
-        //     new_file.write((char *) &c, bit_s.size() / 8);
-
-        //     bit_string = bit_string.substr(0, bit_string.size() - 32);
-        // }
-
         if (bw_index >= BUFFER_SIZE) {
-            
-            std::cout << i << " : ";
-            for (int i = 0; i < BUFFER_SIZE; i++) {
-                std::cout << (u_int)buffer_write[i] << " ";
-            }
-            std::cout << std::endl;
-
             new_file.write((char*) buffer_write, BUFFER_SIZE);
             bw_index = 0;
         }
@@ -391,20 +376,10 @@ void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, Linked
     }
 
     if (bit_string.size() > 0) {
-
-        while (bit_string.size() % 8 != 0)
-            bit_string = "0" + bit_string;
-        
-        reverse_byte(bit_string);
-        std::bitset<sizeof(bit_string)> b(bit_string);
-        unsigned long c = b.to_ulong();
-
-        new_file.write((char *) &c, bit_string.size() / 8);
+        buffer_write[bw_index] = str2byte(bit_string);
+        new_file.write((char *) buffer_write, bw_index + 1);
     }
 
-    uint8_t vec[] = {240,115,227};
-
-    new_file.write((char*)vec, 3 * sizeof(uint8_t));
     delete[] buffer_read;
     delete[] buffer_write;
 }
@@ -483,7 +458,7 @@ void Compactor::decompress(std::string file_path) {
     if (!new_file.is_open())
         throw "Could not open the file!";
 
-    file.read((char *)&sum_freq, sizeof(uint32_t));
+    file.read((char *)&sum_freq, sizeof(uint64_t));
     file.read((char *)buffer, ceil(sum_freq / 8.0));
 
     TreeNodeChar *tree = &list[0];
