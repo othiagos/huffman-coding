@@ -1,49 +1,100 @@
 #include "Compactor.hpp"
 
-void Compactor::count_char(std::ifstream *file, HashTable<TreeNodeChar> *result) {
-    int size;
+void Compactor::count_char(string file_path, HashTable<TreeNodeChar> *result) {
 
-    file->seekg(0, file->end);
-    size = file->tellg();
-    file->seekg(0, file->beg);
+    std::ifstream file(file_path, std::ios::out);
+    if (!file.is_open())
+        throw compexcp::CouldntOpenFile();
+    
+    uint64_t file_size;
+    uint16_t b_index;
 
-    u_char buffer[size];
-    file->read((char *)buffer, size);
+    file.seekg(0, file.end);
+    file_size = file.tellg();
+    file.seekg(0, file.beg);
 
-    for (int i = 0; i < size; i++) {
+    u_char *buffer = new u_char[BUFFER_SIZE];
+    file.read((char *)buffer, BUFFER_SIZE);
+
+    for (uint64_t i = 0; i < file_size; i++) {
         try {
-            if (buffer[i] >> DISCARD_7BIT == UTF8_ENCODING_1BYTE) {
-                char str[2] = {(char) buffer[i], '\0'};
-                std::string code_point(str);
-                TreeNodeChar node = TreeNodeChar(code_point);
-                result->insert(node);
+            if (buffer[b_index] >> DISCARD_7BIT == UTF8_ENCODING_1BYTE) {
+                string str({(char) buffer[b_index]});
+
+                b_index++;
+                result->insert(TreeNodeChar(str));
             }
-            else if (buffer[i] >> DISCARD_5BIT == UTF8_ENCODING_2BYTE) {
-                char str[3] = {(char) buffer[i], (char) buffer[i + 1], '\0'};
-                std::string code_point(str);
-                TreeNodeChar node = TreeNodeChar(code_point);
-                result->insert(node);
+            else if (buffer[b_index] >> DISCARD_5BIT == UTF8_ENCODING_2BYTE) {
+                if (b_index + 1 >= BUFFER_SIZE)
+                    throw compexcp::BufferEnd(1);
+
+                string str({(char) buffer[b_index], (char) buffer[b_index + 1]});
+
                 i++;
+                b_index += 2;
+                result->insert(TreeNodeChar(str));
             }
-            else if (buffer[i] >> DISCARD_4BIT == UTF8_ENCODING_3BYTE) {
-                char str[4] = {(char) buffer[i],(char) buffer[i + 1], (char) buffer[i + 2], '\0'};
-                std::string code_point(str);
-                TreeNodeChar node = TreeNodeChar(code_point);
-                result->insert(node);
+            else if (buffer[b_index] >> DISCARD_4BIT == UTF8_ENCODING_3BYTE) {
+                if (b_index + 2 >= BUFFER_SIZE)
+                    throw compexcp::BufferEnd(2);
+
+                string str({(char) buffer[b_index],(char) buffer[b_index + 1],
+                    (char) buffer[b_index + 2]});
+
                 i += 2;
+                b_index += 3;
+                result->insert(TreeNodeChar(str));
             }
-            else if (buffer[i] >> DISCARD_3BIT == UTF8_ENCODING_4BYTE) {
-                char str[5] = {(char) buffer[i],(char) buffer[i + 1], (char) buffer[i + 2], (char) buffer[i + 3], '\0'};
-                std::string code_point(str);
-                TreeNodeChar node = TreeNodeChar(code_point);
-                result->insert(node);
+            else if (buffer[b_index] >> DISCARD_3BIT == UTF8_ENCODING_4BYTE) {
+                if (b_index + 3 >= BUFFER_SIZE)
+                    throw compexcp::BufferEnd(b_index + 3);
+                string str({(char) buffer[b_index],(char) buffer[b_index + 1],
+                    (char) buffer[b_index + 2], (char) buffer[b_index + 3]});
+
                 i += 3;
+                b_index += 4;
+                result->insert(TreeNodeChar(str));
             }
         } catch (htexcp::ItemExists<TreeNodeChar> &e) {
             TreeNodeChar *item = e.get_item();
             (*item)++;
+        } catch (const compexcp::BufferEnd &e) {
+            u_char *temp_buffer = new u_char[BUFFER_SIZE];
+            file.read((char *)temp_buffer, BUFFER_SIZE);
+
+            string str;
+            while (b_index < BUFFER_SIZE) {
+                str.push_back(buffer[b_index]);
+                i++;
+                b_index++;
+            }
+            
+            b_index = 0;
+            while (b_index < e.get_overflow_size()) {
+                str.push_back(temp_buffer[b_index]);
+                i++;
+                b_index++;
+            }
+
+            try {
+                result->insert(TreeNodeChar(str));
+            }
+            catch(htexcp::ItemExists<TreeNodeChar> &e) {
+                TreeNodeChar *item = e.get_item();
+                (*item)++;
+            }
+
+            delete[] buffer;
+            buffer = temp_buffer;
         }
+
+        if (b_index >= BUFFER_SIZE) {
+            file.read((char *)buffer, BUFFER_SIZE);
+            b_index = 0;
+        } 
     }
+    file.close();
+    delete[] buffer;
 }
 
 void Compactor::huffman_algorithm(LinkedList<TreeNodeChar> &list) {
@@ -119,19 +170,25 @@ void Compactor::reverse_str(std::string &str) {
     }
 }
 
-void Compactor::write_file_compress(std::ifstream *file, TreeNodeChar *tree, LinkedList<TreeNodeChar> &list, std::string file_path) {
+void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, LinkedList<TreeNodeChar> &list) {
     std::string bits = "";
     LinkedList<table> table_char;
     unsigned int bytes_size = list.size();
     unsigned int max_item = list[list.size() - 1].get_count();
-    unsigned int len, bit_len = 0;
+    unsigned int len = 0, bit_len = 0;
 
-    file->seekg(0, file->end);
-    len = file->tellg();
-    file->seekg(0, file->beg);
+    std::ifstream file(file_path, std::ios::out);
+    if (!file.is_open())
+        throw "Could not open the file!";
+
+    file.seekg(0, file.end);
+    len = file.tellg();
+    file.seekg(0, file.beg);
 
     u_char buffer[len];
-    file->read((char *)buffer, len);
+    file.read((char *)buffer, len);
+
+    file.close();
     
     in_order(table_char, bits, bit_len, bytes_size, tree);
 
@@ -241,14 +298,9 @@ void Compactor::write_file_compress(std::ifstream *file, TreeNodeChar *tree, Lin
 }
 
 void Compactor::compress(std::string file_path) {
-    std::ifstream file;
     HashTable<TreeNodeChar> table;
 
-    file.open(file_path);
-    if (!file.is_open())
-        throw "Could not open the file!";
-
-    count_char(&file, &table);
+    count_char(file_path, &table);
 
     LinkedList<TreeNodeChar> list;
     table.get_list(list);
@@ -256,9 +308,7 @@ void Compactor::compress(std::string file_path) {
 
     LinkedList<TreeNodeChar> tree = LinkedList<TreeNodeChar>(list);
     huffman_algorithm(tree);
-    write_file_compress(&file, &tree[0], list, file_path);
-
-    file.close();
+    // write_file_compress(&tree[0], list, file_path);
 }
 
 void Compactor::decompress(std::string file_path) {

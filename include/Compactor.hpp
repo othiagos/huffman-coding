@@ -10,6 +10,10 @@
 #include "HashTable.hpp"
 #include "TreeNodeChar.hpp"
 #include "QuickSort.hpp"
+#include "CompactorExcp.hpp"
+
+// #define BUFFER_SIZE 4096
+#define BUFFER_SIZE 4
 
 #define UTF8_ENCODING_1BYTE 0x00
 #define UTF8_ENCODING_2BYTE 0x06
@@ -31,12 +35,14 @@ struct table {
     std::string encoding;
 };
 
+using std::string;
+
 class Compactor {
 private:
-    static void count_char(std::ifstream *file, HashTable<TreeNodeChar> *result);
+    static void count_char(string file_path, HashTable<TreeNodeChar> *result);
     static void huffman_algorithm(LinkedList<TreeNodeChar> &list);
     static void in_order(LinkedList<table> &table_char, std::string &bits, unsigned int &bit_len, unsigned int &bytes_size, TreeNodeChar *tree);
-    static void write_file_compress(std::ifstream *file, TreeNodeChar *tree, LinkedList<TreeNodeChar> &list, std::string filename);
+    static void write_file_compress(string file_path, TreeNodeChar *tree, LinkedList<TreeNodeChar> &list);
     static void reverse_byte(std::string &str);
     static void reverse_str(std::string &str);
 
