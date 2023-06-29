@@ -45,8 +45,10 @@ private:
     static void write_file_compress(string file_path, TreeNodeChar *tree, LinkedList<TreeNodeChar> &list);
     static void reverse_byte(std::string &str);
     static void reverse_str(std::string &str);
+    static uint8_t str2byte(string &str);
 
 public:
     static void compress(std::string file_path);
     static void decompress(std::string file_path);
 };
+;
