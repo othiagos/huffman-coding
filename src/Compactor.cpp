@@ -192,7 +192,7 @@ uint8_t Compactor::str2byte(string &str) {
 void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, LinkedList<TreeNodeChar> &list) {
     std::string bits = "";
     LinkedList<table> table_char;
-    unsigned int bytes_size = list.size();
+    unsigned int bytes_size = 0;
     unsigned int max_item = list[list.size() - 1].get_count();
     uint64_t bit_len = 0;
     
@@ -214,7 +214,8 @@ void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, Linked
     else if (max_item >> LEN_2BYTE == 0) size = 2;
     else if (max_item >> LEN_3BYTE == 0) size = 3;
     else if (max_item >> LEN_4BYTE == 0) size = 4;
-
+    
+    bytes_size += list.size() * size;
     new_file.write((char *) &size, sizeof(char));
     new_file.write((char *) &bytes_size, sizeof(unsigned int));
 
@@ -341,7 +342,7 @@ void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, Linked
             }
             
             tb = 0;
-            while (tb < e.get_overflow_size()) {
+            while ((int) tb < e.get_overflow_size()) {
                 str.push_back(temp_buffer[tb]);
                 tb++;
                 ti++;
@@ -385,46 +386,17 @@ void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, Linked
 }
 
 void Compactor::compress(std::string file_path) {
-    clock_t t;
-    t = clock();
     HashTable<TreeNodeChar> table;
-    t = clock() - t;
-    std::cout << "Cria hashtable: " << ((float)t)/CLOCKS_PER_SEC << 's' << std::endl;
-
-    t = clock();
     count_char(file_path, &table);
-    t = clock() - t;
-    std::cout << "Contar o caracteres: " << ((float)t)/CLOCKS_PER_SEC << 's' << std::endl;
 
-    t = clock();
     LinkedList<TreeNodeChar> list;
-    t = clock() - t;
-    std::cout << "Cria lista: " << ((float)t)/CLOCKS_PER_SEC << 's' << std::endl;
-
-    t = clock();
     table.get_list(list);
-    t = clock() - t;
-    std::cout << "Gerar list da hashtable: " << ((float)t)/CLOCKS_PER_SEC << 's' << std::endl;
 
-    t = clock();
     QuickSort::sort(list);
-    t = clock() - t;
-    std::cout << "Ordenar Quicksort: " << ((float)t)/CLOCKS_PER_SEC << 's' << std::endl;
-
-    t = clock();
     LinkedList<TreeNodeChar> tree = LinkedList<TreeNodeChar>(list);
-    t = clock() - t;
-    std::cout << "Copiar lista: " << ((float)t)/CLOCKS_PER_SEC << 's' << std::endl;
 
-    t = clock();
     huffman_algorithm(tree);
-    t = clock() - t;
-    std::cout << "Algoritmo de huffman: " << ((float)t)/CLOCKS_PER_SEC << 's' << std::endl;
-
-    t = clock();
     write_file_compress(file_path, &tree[0], list);
-    t = clock() - t;
-    std::cout << "Compactar arquivo: " << ((float)t)/CLOCKS_PER_SEC << 's' << std::endl;
 }
 
 void Compactor::decompress(std::string file_path) {
@@ -435,9 +407,10 @@ void Compactor::decompress(std::string file_path) {
 
     uint8_t size = 0;
     file.read((char *) &size, sizeof(uint8_t));
+    uint8_t filename_size = size;
 
-    char *filename = new char[size];
-    file.read(filename, size);
+    char filename[size];
+    file.read((char*) filename, size);
 
     file.read((char *) &size, sizeof(uint8_t));
     uint32_t len;
@@ -456,52 +429,80 @@ void Compactor::decompress(std::string file_path) {
     for (uint32_t i = 0; i < len; i++) {
         try {
             if (buffer[b_index] >> DISCARD_7BIT == UTF8_ENCODING_1BYTE) {
-                if (b_index + 1 >= BUFFER_SIZE)
-                    throw compexcp::BufferEnd((b_index + 2) % BUFFER_SIZE);
+                if (b_index + size >= BUFFER_SIZE)
+                    throw compexcp::DecompressBufferEnd(
+                        (b_index + size + 1) % BUFFER_SIZE, 1, size);
 
                 t.set_chars({(char) buffer[b_index]});
-                t.set_count(buffer[b_index + 1]);
+
+                uint64_t number = 0;
+                for (uint8_t j = 0; j < size; j++) {
+                    number += buffer[b_index + 1 + j] << 8 * j;
+                }
+                
+                t.set_count(number);
 
                 list.push_back(t);
-                i++;
-                b_index += 2;
+                i += size;
+                b_index += 1 + size;
             }
             else if (buffer[b_index] >> DISCARD_5BIT == UTF8_ENCODING_2BYTE) {
-                if (b_index + 2 >= BUFFER_SIZE)
-                    throw compexcp::BufferEnd((b_index + 3) % BUFFER_SIZE);
+                if (b_index + size + 1 >= BUFFER_SIZE)
+                    throw compexcp::DecompressBufferEnd(
+                        (b_index + size + 2) % BUFFER_SIZE, 2, size);
 
                 t.set_chars({(char) buffer[b_index], (char) buffer[b_index + 1]});
-                t.set_count(buffer[b_index + 2]);
+                
+                uint64_t number = 0;
+                for (uint8_t j = 0; j < size; j++) {
+                    number += buffer[b_index + 2 + j] << 8 * j;
+                }
+                
+                t.set_count(number);
 
                 list.push_back(t);
-                i += 2;
-                b_index += 3;
+                i += 1 + size;
+                b_index += 2 + size;
             }
             else if (buffer[b_index] >> DISCARD_4BIT == UTF8_ENCODING_3BYTE) {
-                if (b_index + 3 >= BUFFER_SIZE)
-                    throw compexcp::BufferEnd((b_index + 4) % BUFFER_SIZE);
+                if (b_index + size + 2 >= BUFFER_SIZE)
+                    throw compexcp::DecompressBufferEnd(
+                        (b_index + size + 3) % BUFFER_SIZE, 3, size);
 
                 t.set_chars({(char) buffer[b_index],(char) buffer[b_index + 1],
                     (char) buffer[b_index + 2]});
-                t.set_count(buffer[b_index + 3]);
+                
+                uint64_t number = 0;
+                for (uint8_t j = 0; j < size; j++) {
+                    number += buffer[b_index + 3 + j] << 8 * j;
+                }
+                
+                t.set_count(number);
 
                 list.push_back(t);
-                i += 3;
-                b_index += 4;
+                i += 2 + size;
+                b_index += 3 + size;
             }
             else if (buffer[b_index] >> DISCARD_3BIT == UTF8_ENCODING_4BYTE) {
-                if (b_index + 4 >= BUFFER_SIZE)
-                    throw compexcp::BufferEnd((b_index + 5) % BUFFER_SIZE);
+                if (b_index + size + 3 >= BUFFER_SIZE)
+                    throw compexcp::DecompressBufferEnd(
+                        (b_index + size + 4) % BUFFER_SIZE, 4, size);
 
                 t.set_chars({(char) buffer[b_index],(char) buffer[b_index + 1], 
                     (char) buffer[b_index + 2], (char) buffer[b_index + 3]});
-                t.set_count(buffer[b_index + 4]);
+                
+                uint64_t number = 0;
+                for (uint8_t j = 0; j < size; j++) {
+                    number += buffer[b_index + 4 + j] << 8 * j;
+                }
+                
+                t.set_count(number);
 
                 list.push_back(t);
-                i += 4;
-                b_index += 5;
+                i += 3 + size;
+                b_index += 4 + size;
             }
-        } catch (const compexcp::BufferEnd& e) {
+        } catch (const compexcp::DecompressBufferEnd& e) {
             u_char *temp_buffer = new u_char[BUFFER_SIZE];
             if (len - 1 - i >= BUFFER_SIZE)
                 file.read((char*) temp_buffer, BUFFER_SIZE);
@@ -509,24 +510,56 @@ void Compactor::decompress(std::string file_path) {
                 file.read((char*) temp_buffer, (len - 1 - i) % BUFFER_SIZE);
 
             string str;
-            while (b_index < BUFFER_SIZE) {
-                str.push_back(buffer[b_index]);
-                i++;
-                b_index++;
+            uint8_t k = 0;
+            bool new_buffer = false;
+            while (k < e.get_char_size()) {
+                if (b_index < BUFFER_SIZE) {
+                    str.push_back(buffer[b_index]);
+                    i++;
+                    b_index++;
+                }
+                else {
+                    if (!new_buffer) {
+                        new_buffer = true;
+                        b_index = 0;
+                    }
+
+                    str.push_back(temp_buffer[b_index]);
+                    i++;
+                    b_index++;
+                }
+                k++;
             }
-            
-            b_index = 0;
-            while (b_index < e.get_overflow_size() - 1) {
-                str.push_back(temp_buffer[b_index]);
-                i++;
-                b_index++;
+
+            if (b_index >= BUFFER_SIZE) {
+                b_index = 0;
+                new_buffer = true;
+            }
+
+            k = 0;
+            uint64_t number = 0;
+            for (uint8_t j = 0; j < e.get_number_size(); j++) {
+                if (b_index >= BUFFER_SIZE) {
+                    new_buffer = true;
+                    b_index = 0;
+                }
+                if (new_buffer) {
+                    number += temp_buffer[b_index] << 8 * j;
+                    i++;
+                    b_index++;
+                }
+                else {
+                    number += buffer[b_index] << 8 * j;
+                    i++;
+                    b_index++;
+                }
             }
             
             t.set_chars(str);
-            t.set_count(temp_buffer[b_index]);
+            t.set_count(number);
 
             list.push_back(t);
-            b_index++;
+            i -= 1;
 
             delete[] buffer;
             buffer = temp_buffer;
@@ -545,9 +578,12 @@ void Compactor::decompress(std::string file_path) {
 
     huffman_algorithm(list);
 
-    std::ofstream new_file(std::string(filename) + "(1).txt", std::ios::out | std::ios::binary);
-    // if (!new_file.is_open())
-    //     throw compexcp::CouldntOpenFile();
+    string str(filename, filename_size);
+    str += "(1).txt";
+
+    std::ofstream new_file(str, std::ios::out | std::ios::binary);
+    if (!new_file.is_open())
+        throw compexcp::CouldntOpenFile();
 
     uint64_t sum_freq;
     file.read((char *)&sum_freq, sizeof(uint64_t));
@@ -605,7 +641,6 @@ void Compactor::decompress(std::string file_path) {
     if (bw_index >= 0)
         new_file.write((char*) buffer_write, bw_index);
 
-    delete[] filename;
     delete[] buffer;
     delete[] buffer_write;
 

@@ -1,20 +1,15 @@
 #pragma once
 
-#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <cstring>
-
-#include <ctime>
 
 #include "HashTable.hpp"
 #include "TreeNodeChar.hpp"
 #include "QuickSort.hpp"
 #include "CompactorExcp.hpp"
 
-// #define BUFFER_SIZE 16384
-#define BUFFER_SIZE 300
+#define BUFFER_SIZE 16384
 
 #define UTF8_ENCODING_1BYTE 0x00
 #define UTF8_ENCODING_2BYTE 0x06
