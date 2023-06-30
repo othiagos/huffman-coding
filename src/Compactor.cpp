@@ -163,6 +163,26 @@ uint8_t Compactor::str2byte(string &str) {
     return byte;
 }
 
+int32_t Compactor::binary_search_table(table *vec, uint32_t size, string str) {
+    uint64_t left = 0, right = size;
+
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+
+        if (vec[mid].chars.compare(str) == 0) {
+            return mid;
+        }
+        else if (vec[mid].chars.compare(str) < 0) {
+            left = mid + 1;
+        }
+        else {
+            right = mid - 1;
+        }
+    }
+
+    return -1;
+}
+
 void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, LinkedList<TreeNodeChar> &list) {
     std::string bits = "";
     LinkedList<table> table_char;
@@ -171,6 +191,16 @@ void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, Linked
     uint64_t bit_len = 0;
     
     in_order(table_char, bits, bit_len, bytes_size, tree);
+
+    QuickSort::sort(table_char);
+    uint32_t table_size = table_char.size();
+    table table_char_vec[table_size];
+
+    uint64_t i = 0;
+    for (table s : table_char) {
+        table_char_vec[i] = s;
+        i++;
+    }
 
     char size = 0;
 
@@ -193,7 +223,6 @@ void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, Linked
     new_file.write((char *) &size, sizeof(char));
     new_file.write((char *) &bytes_size, sizeof(unsigned int));
 
-    uint64_t i;
     for (TreeNodeChar node : list) {
         i = node.get_count();
         new_file.write((char *) node.get_chars().c_str(), node.get_chars().size());
@@ -226,17 +255,16 @@ void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, Linked
             if (buffer_read[br_index] >> DISCARD_7BIT == UTF8_ENCODING_1BYTE) {
                 string str({(char) buffer_read[br_index]});
 
-                for (table s : table_char) {
-                    if (str == s.chars) {
-                        bit_string += s.encoding;
-                        br_index++;
-                        i++;
+                int32_t index = binary_search_table(table_char_vec, table_size, str);
+                if (index >= 0) {
+                    table s = table_char_vec[index];
+                    bit_string += s.encoding;
+                    br_index++;
+                    i++;
 
-                        if (bit_string.size() >= 8) {
-                            buffer_write[bw_index] = str2byte(bit_string);
-                            bw_index++;
-                        }
-                        break;
+                    if (bit_string.size() >= 8) {
+                        buffer_write[bw_index] = str2byte(bit_string);
+                        bw_index++;
                     }
                 }
 
@@ -247,17 +275,16 @@ void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, Linked
 
                 string str({(char) buffer_read[br_index], (char) buffer_read[br_index + 1]});
                 
-                for (table s : table_char) {
-                    if (str == s.chars) {
-                        bit_string += s.encoding;
-                        br_index += 2;
-                        i += 2;
+                int32_t index = binary_search_table(table_char_vec, table_size, str);
 
-                        if (bit_string.size() >= 8) {
-                            buffer_write[bw_index] = str2byte(bit_string);
-                            bw_index++;
-                        }
-                        break;
+                if (index >= 0) {
+                    bit_string += table_char_vec[index].encoding;
+                    br_index += 2;
+                    i += 2;
+
+                    if (bit_string.size() >= 8) {
+                        buffer_write[bw_index] = str2byte(bit_string);
+                        bw_index++;
                     }
                 }
             }
@@ -268,17 +295,16 @@ void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, Linked
                 string str({(char) buffer_read[br_index], (char) buffer_read[br_index + 1],
                     (char) buffer_read[br_index + 2]});
                 
-                for (table s : table_char) {
-                    if (str == s.chars) {
-                        bit_string += s.encoding;
-                        br_index += 3;
-                        i += 3;
+                int32_t index = binary_search_table(table_char_vec, table_size, str);
 
-                        if (bit_string.size() >= 8) {
-                            buffer_write[bw_index] = str2byte(bit_string);
-                            bw_index++;
-                        }
-                        break;
+                if (index >= 0) {
+                    bit_string += table_char_vec[index].encoding;
+                    br_index += 3;
+                    i += 3;
+
+                    if (bit_string.size() >= 8) {
+                        buffer_write[bw_index] = str2byte(bit_string);
+                        bw_index++;
                     }
                 }
             }
@@ -289,19 +315,20 @@ void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, Linked
                 string str({(char) buffer_read[br_index],(char) buffer_read[br_index+ 1],
                     (char) buffer_read[br_index + 2],(char) buffer_read[br_index + 3]});
                 
-                for (table s : table_char) {
-                    if (str == s.chars) {
-                        bit_string += s.encoding;
-                        br_index += 4;
-                        i += 4;
+                
+                int32_t index = binary_search_table(table_char_vec, table_size, str);
 
-                        if (bit_string.size() >= 8) {
-                            buffer_write[bw_index] = str2byte(bit_string);
-                            bw_index++;
-                        }
-                        break;
+                if (index >= 0) {
+                    bit_string += table_char_vec[index].encoding;
+                    br_index += 4;
+                    i += 4;
+
+                    if (bit_string.size() >= 8) {
+                        buffer_write[bw_index] = str2byte(bit_string);
+                        bw_index++;
                     }
                 }
+                
             }
         } catch(const compexcp::BufferEnd& e) {
             u_char *temp_buffer = new u_char[BUFFER_SIZE];
@@ -322,18 +349,18 @@ void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, Linked
                 ti++;
             }
 
-            for (table s : table_char) {
-                if (str == s.chars) {
-                    bit_string += s.encoding;
-                    br_index = tb;
-                    i = ti;
+            int32_t index = binary_search_table(table_char_vec, table_size, str);
+            
+            if (index >= 0) {
+                bit_string += table_char_vec[index].encoding;
+                br_index = tb;
+                i = ti;
 
-                    if (bit_string.size() >= 8) {
-                        buffer_write[bw_index] = str2byte(bit_string);
-                        bw_index++;
-                    }
-                    break;
+                if (bit_string.size() >= 8) {
+                    buffer_write[bw_index] = str2byte(bit_string);
+                    bw_index++;
                 }
+                break;
             }
             delete[] buffer_read;
             buffer_read = temp_buffer;

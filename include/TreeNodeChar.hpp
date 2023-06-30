@@ -5,6 +5,11 @@
 
 #define PRIME_CONST 137
 
+struct table {
+    std::string chars;
+    std::string encoding;
+};
+
 class TreeNodeChar {
 private:
     std::string _chars;
