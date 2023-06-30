@@ -146,32 +146,6 @@ void Compactor::in_order(LinkedList<table> &table_char, std::string &bits, uint6
     }
 }
 
-void Compactor::reverse_byte(std::string &str) {
-    if (str.size() % 8 != 0)
-        throw "invalid string";
-
-    for (int i = 0; i < (int) str.size() / 8; i++) {
-        for (int j = 0; j < 4; j++) {
-            if (str[i * 8 + j] != str[i * 8 + 7 - j]) {
-                char aux = str[i * 8 + j];
-                str[i * 8 + j] = str[i * 8 + 7 - j];
-                str[i * 8 +7 - j] = aux;
-            }
-        }
-    }
-}
-
-void Compactor::reverse_str(std::string &str) {
-    int size = str.size();
-    for (int i = 0; i < size / 2; i++) {
-        if (str[i] != str[size - 1 - i]) {
-            char aux = str[size - 1 - i];
-            str[size - 1 - i] = str[i];
-            str[i] = aux;
-        }
-    }
-}
-
 uint8_t Compactor::str2byte(string &str) {
     string substr = str.substr(0, 8);
     
@@ -183,7 +157,7 @@ uint8_t Compactor::str2byte(string &str) {
     uint8_t byte = 0;
     for (uint8_t i = 0; i < substr.size(); i++) {
         if (substr[i] == '1')
-            byte += pow(2, 7 - i);
+            byte += 1 << (7 - i);
     }
 
     return byte;

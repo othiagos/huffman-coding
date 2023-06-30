@@ -39,8 +39,6 @@ private:
     static void huffman_algorithm(LinkedList<TreeNodeChar> &list);
     static void in_order(LinkedList<table> &table_char, std::string &bits, uint64_t &bit_len, unsigned int &bytes_size, TreeNodeChar *tree);
     static void write_file_compress(string file_path, TreeNodeChar *tree, LinkedList<TreeNodeChar> &list);
-    static void reverse_byte(std::string &str);
-    static void reverse_str(std::string &str);
     static uint8_t str2byte(string &str);
 
 public:
