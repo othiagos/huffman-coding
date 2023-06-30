@@ -126,7 +126,7 @@ void Compactor::huffman_algorithm(LinkedList<TreeNodeChar> &list) {
     }
 }
 
-void Compactor::in_order(LinkedList<table> &table_char, std::string &bits, unsigned int &bit_len, unsigned int &bytes_size, TreeNodeChar *tree) {
+void Compactor::in_order(LinkedList<table> &table_char, std::string &bits, uint64_t &bit_len, unsigned int &bytes_size, TreeNodeChar *tree) {
     if(tree->get_right() != nullptr) {
         bits.push_back('0');
         in_order(table_char, bits, bit_len, bytes_size, tree->get_right());
@@ -194,7 +194,7 @@ void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, Linked
     LinkedList<table> table_char;
     unsigned int bytes_size = list.size();
     unsigned int max_item = list[list.size() - 1].get_count();
-    unsigned int bit_len = 0;
+    uint64_t bit_len = 0;
     
     in_order(table_char, bits, bit_len, bytes_size, tree);
 
@@ -416,61 +416,125 @@ void Compactor::decompress(std::string file_path) {
 
     LinkedList<TreeNodeChar> list;
     TreeNodeChar t;
-    u_char buffer[len];
-    u_int32_t sum_freq;
-    file.read((char *) buffer, len);
-    for (int i = 0; i < (int) len; i++) {
+    u_char *buffer = new u_char[BUFFER_SIZE];
+    uint16_t b_index = 0;
+    
+    file.read((char *) buffer, BUFFER_SIZE);
+    for (uint32_t i = 0; i < len; i++) {
+        try {
+            if (buffer[b_index] >> DISCARD_7BIT == UTF8_ENCODING_1BYTE) {
+                if (b_index + 1 >= BUFFER_SIZE)
+                    throw compexcp::BufferEnd((b_index + 2) % BUFFER_SIZE);
 
-        if (buffer[i] >> DISCARD_7BIT == UTF8_ENCODING_1BYTE) {
-            t.set_chars({(char) buffer[i]});
-            t.set_count(buffer[i + 1]);
+                t.set_chars({(char) buffer[b_index]});
+                t.set_count(buffer[b_index + 1]);
+
+                list.push_back(t);
+                i++;
+                b_index += 2;
+            }
+            else if (buffer[b_index] >> DISCARD_5BIT == UTF8_ENCODING_2BYTE) {
+                if (b_index + 2 >= BUFFER_SIZE)
+                    throw compexcp::BufferEnd((b_index + 3) % BUFFER_SIZE);
+
+                t.set_chars({(char) buffer[b_index], (char) buffer[b_index + 1]});
+                t.set_count(buffer[b_index + 2]);
+
+                list.push_back(t);
+                i += 2;
+                b_index += 3;
+            }
+            else if (buffer[b_index] >> DISCARD_4BIT == UTF8_ENCODING_3BYTE) {
+                if (b_index + 3 >= BUFFER_SIZE)
+                    throw compexcp::BufferEnd((b_index + 4) % BUFFER_SIZE);
+
+                t.set_chars({(char) buffer[b_index],(char) buffer[b_index + 1],
+                    (char) buffer[b_index + 2]});
+                t.set_count(buffer[b_index + 3]);
+
+                list.push_back(t);
+                i += 3;
+                b_index += 4;
+            }
+            else if (buffer[b_index] >> DISCARD_3BIT == UTF8_ENCODING_4BYTE) {
+                if (b_index + 4 >= BUFFER_SIZE)
+                    throw compexcp::BufferEnd((b_index + 5) % BUFFER_SIZE);
+
+                t.set_chars({(char) buffer[b_index],(char) buffer[b_index + 1], 
+                    (char) buffer[b_index + 2], (char) buffer[b_index + 3]});
+                t.set_count(buffer[b_index + 4]);
+
+                list.push_back(t);
+                i += 4;
+                b_index += 5;
+            }
+        } catch (const compexcp::BufferEnd& e) {
+            u_char *temp_buffer = new u_char[BUFFER_SIZE];
+            if (len - 1 - i >= BUFFER_SIZE)
+                file.read((char*) temp_buffer, BUFFER_SIZE);
+            else
+                file.read((char*) temp_buffer, (len - 1 - i) % BUFFER_SIZE);
+
+            string str;
+            while (b_index < BUFFER_SIZE) {
+                str.push_back(buffer[b_index]);
+                i++;
+                b_index++;
+            }
+            
+            b_index = 0;
+            while (b_index < e.get_overflow_size() - 1) {
+                str.push_back(temp_buffer[b_index]);
+                i++;
+                b_index++;
+            }
+            
+            t.set_chars(str);
+            t.set_count(temp_buffer[b_index]);
 
             list.push_back(t);
-            i += 1;
+            b_index++;
+
+            delete[] buffer;
+            buffer = temp_buffer;
         }
-        else if (buffer[i] >> DISCARD_5BIT == UTF8_ENCODING_2BYTE) {
-            t.set_chars({(char) buffer[i], (char) buffer[i + 1]});
-            t.set_count(buffer[i + 2]);
 
-            list.push_back(t);
-            i += 2;
-        }
-        else if (buffer[i] >> DISCARD_4BIT == UTF8_ENCODING_3BYTE) {
-            t.set_chars({(char) buffer[i],(char) buffer[i + 1], (char) buffer[i + 2]});
-            t.set_count(buffer[i + 3]);
-
-            list.push_back(t);
-            i += 3;
-        }
-        else if (buffer[i] >> DISCARD_3BIT == UTF8_ENCODING_4BYTE) {
-            t.set_chars({(char) buffer[i],(char) buffer[i + 1], (char) buffer[i + 2], (char) buffer[i + 3]});
-            t.set_count(buffer[i + 4]);
-
-            list.push_back(t);
-            i += 4;
+        if (b_index >= BUFFER_SIZE) {
+            if (len - 1 - i >= BUFFER_SIZE)
+                file.read((char*) buffer, BUFFER_SIZE);
+            else
+                file.read((char*) buffer, (len - i) % BUFFER_SIZE);
+            b_index = 0;
         }
     }
+
+    delete[] buffer;
 
     huffman_algorithm(list);
 
     std::ofstream new_file(std::string(filename) + "(1).txt", std::ios::out | std::ios::binary);
+    // if (!new_file.is_open())
+    //     throw compexcp::CouldntOpenFile();
 
-    if (!new_file.is_open())
-        throw "Could not open the file!";
-
+    uint64_t sum_freq;
     file.read((char *)&sum_freq, sizeof(uint64_t));
-    file.read((char *)buffer, ceil(sum_freq / 8.0));
+    uint64_t bytes = ceil(sum_freq / 8.0);
+
+    buffer = new u_char[BUFFER_SIZE];
+    
+    file.read((char *)buffer, BUFFER_SIZE);
 
     TreeNodeChar *tree = &list[0];
-    uint32_t count_bits = 0;
-    for (int i = 0; i < ceil(sum_freq / 8.0); i++) {
-        for (int j = 0; j < 8 && count_bits <= sum_freq; j++) {
+    uint64_t count_bits = 0;
+
+    for (b_index = 0; b_index < bytes; b_index++) {
+        for (uint8_t j = 0; j < 8 && count_bits <= sum_freq; j++) {
             if (tree->get_chars() != "") {
                 new_file.write(tree->get_chars().c_str(), tree->get_chars().size() * sizeof(char));
                 tree = &list[0];
             }
 
-            if (buffer[i] >> (7 - j) & 1) {
+            if (buffer[b_index] >> (7 - j) & 1) {
                 if (tree->get_left() != nullptr)
                     tree = tree->get_left();
             }
@@ -479,10 +543,17 @@ void Compactor::decompress(std::string file_path) {
                     tree = tree->get_right();
             }
             count_bits++;
+
+            if (b_index >= BUFFER_SIZE) {
+                file.read((char*) buffer, BUFFER_SIZE);
+                b_index = 0;
+            }
         }
     }
+    std::cout << std::endl;
 
     delete[] filename;
+    delete[] buffer;
 
     new_file.close();
     file.close();

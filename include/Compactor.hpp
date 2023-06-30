@@ -12,8 +12,8 @@
 #include "QuickSort.hpp"
 #include "CompactorExcp.hpp"
 
-#define BUFFER_SIZE 32 * 1024
-// #define BUFFER_SIZE 10
+// #define BUFFER_SIZE 16 * 1024
+#define BUFFER_SIZE 10
 
 #define UTF8_ENCODING_1BYTE 0x00
 #define UTF8_ENCODING_2BYTE 0x06
@@ -41,7 +41,7 @@ class Compactor {
 private:
     static void count_char(string file_path, HashTable<TreeNodeChar> *result);
     static void huffman_algorithm(LinkedList<TreeNodeChar> &list);
-    static void in_order(LinkedList<table> &table_char, std::string &bits, unsigned int &bit_len, unsigned int &bytes_size, TreeNodeChar *tree);
+    static void in_order(LinkedList<table> &table_char, std::string &bits, uint64_t &bit_len, unsigned int &bytes_size, TreeNodeChar *tree);
     static void write_file_compress(string file_path, TreeNodeChar *tree, LinkedList<TreeNodeChar> &list);
     static void reverse_byte(std::string &str);
     static void reverse_str(std::string &str);
