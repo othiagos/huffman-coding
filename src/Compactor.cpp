@@ -385,17 +385,46 @@ void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, Linked
 }
 
 void Compactor::compress(std::string file_path) {
+    clock_t t;
+    t = clock();
     HashTable<TreeNodeChar> table;
+    t = clock() - t;
+    std::cout << "Cria hashtable: " << ((float)t)/CLOCKS_PER_SEC << 's' << std::endl;
 
+    t = clock();
     count_char(file_path, &table);
+    t = clock() - t;
+    std::cout << "Contar o caracteres: " << ((float)t)/CLOCKS_PER_SEC << 's' << std::endl;
 
+    t = clock();
     LinkedList<TreeNodeChar> list;
-    table.get_list(list);
-    QuickSort::sort(list);
+    t = clock() - t;
+    std::cout << "Cria lista: " << ((float)t)/CLOCKS_PER_SEC << 's' << std::endl;
 
+    t = clock();
+    table.get_list(list);
+    t = clock() - t;
+    std::cout << "Gerar list da hashtable: " << ((float)t)/CLOCKS_PER_SEC << 's' << std::endl;
+
+    t = clock();
+    QuickSort::sort(list);
+    t = clock() - t;
+    std::cout << "Ordenar Quicksort: " << ((float)t)/CLOCKS_PER_SEC << 's' << std::endl;
+
+    t = clock();
     LinkedList<TreeNodeChar> tree = LinkedList<TreeNodeChar>(list);
+    t = clock() - t;
+    std::cout << "Copiar lista: " << ((float)t)/CLOCKS_PER_SEC << 's' << std::endl;
+
+    t = clock();
     huffman_algorithm(tree);
+    t = clock() - t;
+    std::cout << "Algoritmo de huffman: " << ((float)t)/CLOCKS_PER_SEC << 's' << std::endl;
+
+    t = clock();
     write_file_compress(file_path, &tree[0], list);
+    t = clock() - t;
+    std::cout << "Compactar arquivo: " << ((float)t)/CLOCKS_PER_SEC << 's' << std::endl;
 }
 
 void Compactor::decompress(std::string file_path) {
@@ -416,10 +445,14 @@ void Compactor::decompress(std::string file_path) {
 
     LinkedList<TreeNodeChar> list;
     TreeNodeChar t;
+
     u_char *buffer = new u_char[BUFFER_SIZE];
+    if (len >= BUFFER_SIZE)
+        file.read((char *) buffer, BUFFER_SIZE);
+    else 
+        file.read((char *) buffer, len);
     uint16_t b_index = 0;
     
-    file.read((char *) buffer, BUFFER_SIZE);
     for (uint32_t i = 0; i < len; i++) {
         try {
             if (buffer[b_index] >> DISCARD_7BIT == UTF8_ENCODING_1BYTE) {
@@ -521,6 +554,8 @@ void Compactor::decompress(std::string file_path) {
     uint64_t bytes = ceil(sum_freq / 8.0);
 
     buffer = new u_char[BUFFER_SIZE];
+    u_char *buffer_write = new u_char[BUFFER_SIZE];
+    uint16_t bw_index = 0;
     
     file.read((char *)buffer, BUFFER_SIZE);
 
@@ -529,8 +564,22 @@ void Compactor::decompress(std::string file_path) {
 
     for (b_index = 0; b_index < bytes; b_index++) {
         for (uint8_t j = 0; j < 8 && count_bits <= sum_freq; j++) {
+            if (b_index >= BUFFER_SIZE) {
+                file.read((char*) buffer, BUFFER_SIZE);
+                b_index = 0;
+            }
+
             if (tree->get_chars() != "") {
-                new_file.write(tree->get_chars().c_str(), tree->get_chars().size() * sizeof(char));
+                string str = tree->get_chars();
+                for (uint8_t i = 0; i < str.size(); i++) {
+                    buffer_write[bw_index] = str[i];
+                    bw_index++;
+
+                    if (bw_index >= BUFFER_SIZE) {
+                        new_file.write((char*) buffer_write, BUFFER_SIZE);
+                        bw_index = 0;
+                    }
+                }
                 tree = &list[0];
             }
 
@@ -544,16 +593,21 @@ void Compactor::decompress(std::string file_path) {
             }
             count_bits++;
 
-            if (b_index >= BUFFER_SIZE) {
-                file.read((char*) buffer, BUFFER_SIZE);
-                b_index = 0;
+            if (bw_index >= BUFFER_SIZE) {
+                new_file.write((char*) buffer_write, BUFFER_SIZE);
+                bw_index = 0;
             }
         }
+        if (count_bits > sum_freq) 
+            break;
     }
-    std::cout << std::endl;
+
+    if (bw_index >= 0)
+        new_file.write((char*) buffer_write, bw_index);
 
     delete[] filename;
     delete[] buffer;
+    delete[] buffer_write;
 
     new_file.close();
     file.close();
