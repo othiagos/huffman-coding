@@ -39,14 +39,26 @@ namespace compexcp {
     };
 
     class CouldNotOpenFile : public std::exception {
-    private:
-        uint8_t _overflow_size;
         
     public:
         CouldNotOpenFile() { }
 
         const char* what() const throw() {
             return "Could not open the file";
+        }
+    };
+
+    class WithoutArguments : public std::exception {
+    private:
+        uint8_t _arg_count;
+        
+    public:
+        WithoutArguments(uint8_t arg_count) : _arg_count(arg_count) { }
+
+        uint8_t get_arg_count() const { return this->_arg_count; }
+
+        const char* what() const throw() {
+            return "Arguments passed are invalid";
         }
     };
 }
