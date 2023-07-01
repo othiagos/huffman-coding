@@ -3,12 +3,12 @@
 #include <exception>
 
 namespace compexcp {
-    class BufferEnd : public std::exception {
+    class BufferOverflow : public std::exception {
     private:
         int _overflow_size;
         
     public:
-        BufferEnd(int overflow_size) : _overflow_size(overflow_size) { }
+        BufferOverflow(int overflow_size) : _overflow_size(overflow_size) { }
 
         int get_overflow_size() const { return this->_overflow_size; }
 
@@ -17,14 +17,14 @@ namespace compexcp {
         }
     };
 
-    class DecompressBufferEnd : public std::exception {
+    class DecompressBufferOverflow : public std::exception {
     private:
         int _overflow_size;
         int _char_size;
         int _number_size;
         
     public:
-        DecompressBufferEnd(int overflow_size, int char_size, int number_size)
+        DecompressBufferOverflow(int overflow_size, int char_size, int number_size)
              : _overflow_size(overflow_size), _char_size(char_size), _number_size(number_size) { }
 
         int get_overflow_size() const { return this->_overflow_size; }

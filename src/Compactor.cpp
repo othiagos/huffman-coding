@@ -26,7 +26,7 @@ void Compactor::count_char(string file_path, HashTable<TreeNode> *result) {
             }
             else if (buffer[b_index] >> DISCARD_5BIT == UTF8_ENCODING_2BYTE) {
                 if (b_index + 1 >= BUFFER_SIZE)
-                    throw compexcp::BufferEnd((b_index + 2) % BUFFER_SIZE);
+                    throw compexcp::BufferOverflow((b_index + 2) % BUFFER_SIZE);
 
                 string str({(char) buffer[b_index], (char) buffer[b_index + 1]});
 
@@ -36,7 +36,7 @@ void Compactor::count_char(string file_path, HashTable<TreeNode> *result) {
             }
             else if (buffer[b_index] >> DISCARD_4BIT == UTF8_ENCODING_3BYTE) {
                 if (b_index + 2 >= BUFFER_SIZE)
-                    throw compexcp::BufferEnd((b_index + 3) % BUFFER_SIZE);
+                    throw compexcp::BufferOverflow((b_index + 3) % BUFFER_SIZE);
 
                 string str({(char) buffer[b_index],(char) buffer[b_index + 1],
                     (char) buffer[b_index + 2]});
@@ -47,7 +47,7 @@ void Compactor::count_char(string file_path, HashTable<TreeNode> *result) {
             }
             else if (buffer[b_index] >> DISCARD_3BIT == UTF8_ENCODING_4BYTE) {
                 if (b_index + 3 >= BUFFER_SIZE)
-                    throw compexcp::BufferEnd((b_index + 4) % BUFFER_SIZE);
+                    throw compexcp::BufferOverflow((b_index + 4) % BUFFER_SIZE);
                 string str({(char) buffer[b_index],(char) buffer[b_index + 1],
                     (char) buffer[b_index + 2], (char) buffer[b_index + 3]});
 
@@ -58,7 +58,7 @@ void Compactor::count_char(string file_path, HashTable<TreeNode> *result) {
         } catch (htexcp::ItemExists<TreeNode> &e) {
             TreeNode *item = e.get_item();
             (*item)++;
-        } catch (const compexcp::BufferEnd &e) {
+        } catch (const compexcp::BufferOverflow &e) {
             u_char *temp_buffer = new u_char[BUFFER_SIZE];
             file.read((char *)temp_buffer, BUFFER_SIZE);
 
@@ -264,7 +264,7 @@ void Compactor::write_file_compress(string input_path, string output_path, TreeN
             }
             else if (buffer_read[br_index] >> DISCARD_5BIT == UTF8_ENCODING_2BYTE) {
                 if (br_index + 1 >= BUFFER_SIZE)
-                    throw compexcp::BufferEnd((br_index + 2) % BUFFER_SIZE);
+                    throw compexcp::BufferOverflow((br_index + 2) % BUFFER_SIZE);
 
                 string str({(char) buffer_read[br_index], (char) buffer_read[br_index + 1]});
                 
@@ -283,7 +283,7 @@ void Compactor::write_file_compress(string input_path, string output_path, TreeN
             }
             else if (buffer_read[br_index] >> DISCARD_4BIT == UTF8_ENCODING_3BYTE) {
                 if (br_index + 2 >= BUFFER_SIZE)
-                    throw compexcp::BufferEnd((br_index + 3) % BUFFER_SIZE);
+                    throw compexcp::BufferOverflow((br_index + 3) % BUFFER_SIZE);
 
                 string str({(char) buffer_read[br_index], (char) buffer_read[br_index + 1],
                     (char) buffer_read[br_index + 2]});
@@ -303,7 +303,7 @@ void Compactor::write_file_compress(string input_path, string output_path, TreeN
             }
             else if (buffer_read[br_index] >> DISCARD_3BIT == UTF8_ENCODING_4BYTE) {
                 if (br_index + 3 >= BUFFER_SIZE)
-                    throw compexcp::BufferEnd((br_index + 4) % BUFFER_SIZE);
+                    throw compexcp::BufferOverflow((br_index + 4) % BUFFER_SIZE);
                 
                 string str({(char) buffer_read[br_index],(char) buffer_read[br_index+ 1],
                     (char) buffer_read[br_index + 2],(char) buffer_read[br_index + 3]});
@@ -323,7 +323,7 @@ void Compactor::write_file_compress(string input_path, string output_path, TreeN
                 }
                 
             }
-        } catch(const compexcp::BufferEnd& e) {
+        } catch(const compexcp::BufferOverflow& e) {
             u_char *temp_buffer = new u_char[BUFFER_SIZE];
             file.read((char *)temp_buffer, BUFFER_SIZE);
 
@@ -420,7 +420,7 @@ void Compactor::decompress(string input_path, string output_path) {
         try {
             if (buffer[b_index] >> DISCARD_7BIT == UTF8_ENCODING_1BYTE) {
                 if (b_index + size >= BUFFER_SIZE)
-                    throw compexcp::DecompressBufferEnd(
+                    throw compexcp::DecompressBufferOverflow(
                         (b_index + size + 1) % BUFFER_SIZE, 1, size);
 
                 t.set_chars({(char) buffer[b_index]});
@@ -438,7 +438,7 @@ void Compactor::decompress(string input_path, string output_path) {
             }
             else if (buffer[b_index] >> DISCARD_5BIT == UTF8_ENCODING_2BYTE) {
                 if (b_index + size + 1 >= BUFFER_SIZE)
-                    throw compexcp::DecompressBufferEnd(
+                    throw compexcp::DecompressBufferOverflow(
                         (b_index + size + 2) % BUFFER_SIZE, 2, size);
 
                 t.set_chars({(char) buffer[b_index], (char) buffer[b_index + 1]});
@@ -456,7 +456,7 @@ void Compactor::decompress(string input_path, string output_path) {
             }
             else if (buffer[b_index] >> DISCARD_4BIT == UTF8_ENCODING_3BYTE) {
                 if (b_index + size + 2 >= BUFFER_SIZE)
-                    throw compexcp::DecompressBufferEnd(
+                    throw compexcp::DecompressBufferOverflow(
                         (b_index + size + 3) % BUFFER_SIZE, 3, size);
 
                 t.set_chars({(char) buffer[b_index],(char) buffer[b_index + 1],
@@ -475,7 +475,7 @@ void Compactor::decompress(string input_path, string output_path) {
             }
             else if (buffer[b_index] >> DISCARD_3BIT == UTF8_ENCODING_4BYTE) {
                 if (b_index + size + 3 >= BUFFER_SIZE)
-                    throw compexcp::DecompressBufferEnd(
+                    throw compexcp::DecompressBufferOverflow(
                         (b_index + size + 4) % BUFFER_SIZE, 4, size);
 
                 t.set_chars({(char) buffer[b_index],(char) buffer[b_index + 1], 
@@ -492,7 +492,7 @@ void Compactor::decompress(string input_path, string output_path) {
                 i += 3 + size;
                 b_index += 4 + size;
             }
-        } catch (const compexcp::DecompressBufferEnd& e) {
+        } catch (const compexcp::DecompressBufferOverflow& e) {
             u_char *temp_buffer = new u_char[BUFFER_SIZE];
             if (len - 1 - i >= BUFFER_SIZE)
                 file.read((char*) temp_buffer, BUFFER_SIZE);
