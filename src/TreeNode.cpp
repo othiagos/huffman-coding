@@ -36,20 +36,6 @@ TreeNode::TreeNode(unsigned int count, TreeNode right, TreeNode left) {
     this->_left = new TreeNode(left);
 }
 
-int TreeNode::hash() {
-    int hashValue = 0;
-
-    for (int i = 0; i < (int) _chars.length() - 1; i++)
-        hashValue += (unsigned char) _chars[i] * pow(PRIME_CONST, _chars.length() - 1 - i);
-
-    return hashValue;
-}
-
-TreeNode TreeNode::operator++(int) {
-    this->_count++;
-    return *this;
-}
-
 bool TreeNode::operator==(const TreeNode& o) {
     return this->_chars == o._chars;
 }
@@ -86,6 +72,14 @@ TreeNode *TreeNode::get_right() {
     return this->_right;
 }
 
+void TreeNode::set_right(TreeNode *node) {
+    this->_right = node;
+}
+
 TreeNode *TreeNode::get_left() {
     return this->_left;
+}
+
+void TreeNode::set_left(TreeNode *node) {
+    this->_left = node;
 }

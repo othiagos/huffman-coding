@@ -3,8 +3,6 @@
 #include <cmath>
 #include <string>
 
-#define PRIME_CONST 137
-
 struct table {
     std::string chars;
     std::string encoding;
@@ -13,7 +11,7 @@ struct table {
 class TreeNode {
 private:
     std::string _chars;
-    unsigned int _count;
+    unsigned int _count = 0;
     TreeNode *_right = nullptr;
     TreeNode *_left = nullptr;
 
@@ -24,14 +22,23 @@ public:
     TreeNode(std::string _chars);
     TreeNode(unsigned int count, TreeNode right, TreeNode left);
 
-    int hash();
-    TreeNode operator++(int);
     bool operator==(const TreeNode& o);
+
     TreeNode& operator=(const TreeNode& o);
+
     std::string get_chars() const;
+
     void set_chars(std::string value);
+
     unsigned int get_count() const;
+
     void set_count(unsigned int value);
+
     TreeNode *get_right();
+
+    void set_right(TreeNode *node);
+
     TreeNode *get_left();
+
+    void set_left(TreeNode *node);
 };
