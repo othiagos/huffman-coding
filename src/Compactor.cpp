@@ -4,7 +4,7 @@ void Compactor::count_char(string file_path, AVLTree &result) {
 
     std::ifstream file(file_path, std::ios::in);
     if (!file.is_open())
-        throw compexcp::CouldntOpenFile();
+        throw compexcp::CouldNotOpenFile();
     
     uint64_t file_size = 0;
     uint16_t b_index = 0;
@@ -111,7 +111,7 @@ void Compactor::huffman_algorithm(LinkedList<TreeNode> &list) {
    TreeNode y;
    TreeNode z;
 
-    int i;
+    int32_t i;
     while (list.size() != 1) {
         x = list.pop_front();
         y = list.pop_front();
@@ -133,7 +133,9 @@ void Compactor::huffman_algorithm(LinkedList<TreeNode> &list) {
     }
 }
 
-void Compactor::in_order(LinkedList<table> &table_char, string &bits, uint64_t &bit_len, unsigned int &bytes_size, TreeNode *tree) {
+void Compactor::in_order(LinkedList<table> &table_char, string &bits, uint64_t &bit_len, 
+        uint32_t &bytes_size, TreeNode *tree) {
+
     if(tree->get_right() != nullptr) {
         bits.push_back('0');
         in_order(table_char, bits, bit_len, bytes_size, tree->get_right());
@@ -171,10 +173,10 @@ uint8_t Compactor::str2byte(string &str) {
 }
 
 int32_t Compactor::binary_search_table(table *vec, uint32_t size, string str) {
-    uint64_t left = 0, right = size;
+    uint64_t left = 0, right = size - 1;
 
     while (left <= right) {
-        int mid = left + (right - left) / 2;
+        uint32_t mid = left + (right - left) / 2;
 
         if (vec[mid].chars.compare(str) == 0) {
             return mid;
@@ -190,11 +192,13 @@ int32_t Compactor::binary_search_table(table *vec, uint32_t size, string str) {
     return -1;
 }
 
-void Compactor::write_file_compress(string input_path, string output_path, TreeNode *tree, LinkedList<TreeNode> &list) {
+void Compactor::write_file_compress(string input_path, string output_path, TreeNode *tree,
+        LinkedList<TreeNode> &list) {
+
     string bits = "";
     LinkedList<table> table_char;
-    unsigned int bytes_size = 0;
-    unsigned int max_item = list[list.size() - 1].get_count();
+    uint32_t bytes_size = 0;
+    uint32_t max_item = list[list.size() - 1].get_count();
     uint64_t bit_len = 0;
     
     in_order(table_char, bits, bit_len, bytes_size, tree);
@@ -211,17 +215,17 @@ void Compactor::write_file_compress(string input_path, string output_path, TreeN
 
     std::ofstream new_file(output_path, std::ios::out | std::ios::binary);
     if (!new_file.is_open())
-        throw compexcp::CouldntOpenFile();
+        throw compexcp::CouldNotOpenFile();
 
-    char size = 0;
+    uint8_t size = 0;
     if (max_item >> LEN_1BYTE == 0) size = 1;
     else if (max_item >> LEN_2BYTE == 0) size = 2;
     else if (max_item >> LEN_3BYTE == 0) size = 3;
     else if (max_item >> LEN_4BYTE == 0) size = 4;
     
     bytes_size += list.size() * size;
-    new_file.write((char *) &size, sizeof(char));
-    new_file.write((char *) &bytes_size, sizeof(unsigned int));
+    new_file.write((char *) &size, sizeof(uint8_t));
+    new_file.write((char *) &bytes_size, sizeof(uint32_t));
 
     for (TreeNode node : list) {
         i = node.get_count();
@@ -233,7 +237,7 @@ void Compactor::write_file_compress(string input_path, string output_path, TreeN
 
     std::ifstream file(input_path, std::ios::in);
     if (!file.is_open())
-        throw compexcp::CouldntOpenFile();
+        throw compexcp::CouldNotOpenFile();
     
     uint64_t file_size;
     u_char *buffer_read = new u_char[BUFFER_SIZE];
@@ -407,7 +411,7 @@ void Compactor::compress(string input_path, string output_path) {
 void Compactor::decompress(string input_path, string output_path) {
     std::ifstream file(input_path, std::ios::in | std::ios::binary);
     if (!file.is_open())
-        throw compexcp::CouldntOpenFile();
+        throw compexcp::CouldNotOpenFile();
 
     uint8_t size = 0;
     file.read((char *) &size, sizeof(uint8_t));
@@ -578,7 +582,7 @@ void Compactor::decompress(string input_path, string output_path) {
 
     std::ofstream new_file(output_path, std::ios::out | std::ios::binary);
     if (!new_file.is_open())
-        throw compexcp::CouldntOpenFile();
+        throw compexcp::CouldNotOpenFile();
 
     uint64_t sum_freq;
     file.read((char *)&sum_freq, sizeof(uint64_t));
