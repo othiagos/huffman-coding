@@ -183,7 +183,7 @@ int32_t Compactor::binary_search_table(table *vec, uint32_t size, string str) {
     return -1;
 }
 
-void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, LinkedList<TreeNodeChar> &list) {
+void Compactor::write_file_compress(string input_path, string output_path, TreeNodeChar *tree, LinkedList<TreeNodeChar> &list) {
     std::string bits = "";
     LinkedList<table> table_char;
     unsigned int bytes_size = 0;
@@ -202,18 +202,11 @@ void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, Linked
         i++;
     }
 
-    char size = 0;
-
-    std::string filename = file_path.substr(0, file_path.find("."));
-
-    std::ofstream new_file(filename + ".tzip", std::ios::out | std::ios::binary);
+    std::ofstream new_file(output_path, std::ios::out | std::ios::binary);
     if (!new_file.is_open())
         throw compexcp::CouldntOpenFile();
 
-    size = file_path.size(); 
-    new_file.write((char*) &size, sizeof(char));
-    new_file.write(file_path.c_str(), size * sizeof(char));
-
+    char size = 0;
     if (max_item >> LEN_1BYTE == 0) size = 1;
     else if (max_item >> LEN_2BYTE == 0) size = 2;
     else if (max_item >> LEN_3BYTE == 0) size = 3;
@@ -231,7 +224,7 @@ void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, Linked
 
     new_file.write((char *) &bit_len, sizeof(uint64_t));
 
-    std::ifstream file(file_path, std::ios::in);
+    std::ifstream file(input_path, std::ios::in);
     if (!file.is_open())
         throw compexcp::CouldntOpenFile();
     
@@ -389,9 +382,9 @@ void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, Linked
     delete[] buffer_write;
 }
 
-void Compactor::compress(std::string file_path) {
+void Compactor::compress(string input_path, string output_path) {
     HashTable<TreeNodeChar> table;
-    count_char(file_path, &table);
+    count_char(input_path, &table);
 
     LinkedList<TreeNodeChar> list;
     table.get_list(list);
@@ -400,22 +393,15 @@ void Compactor::compress(std::string file_path) {
     LinkedList<TreeNodeChar> tree = LinkedList<TreeNodeChar>(list);
 
     huffman_algorithm(tree);
-    write_file_compress(file_path, &tree[0], list);
+    write_file_compress(input_path, output_path, &tree[0], list);
 }
 
-void Compactor::decompress(std::string file_path) {
-    std::ifstream file(file_path, std::ios::in | std::ios::binary);
-
+void Compactor::decompress(string input_path, string output_path) {
+    std::ifstream file(input_path, std::ios::in | std::ios::binary);
     if (!file.is_open())
-        throw "Could not open the file!";
+        throw compexcp::CouldntOpenFile();
 
     uint8_t size = 0;
-    file.read((char *) &size, sizeof(uint8_t));
-    uint8_t filename_size = size;
-
-    char filename[size];
-    file.read((char*) filename, size);
-
     file.read((char *) &size, sizeof(uint8_t));
     uint32_t len;
     file.read((char *) &len, sizeof(uint32_t));
@@ -582,10 +568,7 @@ void Compactor::decompress(std::string file_path) {
 
     huffman_algorithm(list);
 
-    string str(filename, filename_size);
-    str += "(1).txt";
-
-    std::ofstream new_file(str, std::ios::out | std::ios::binary);
+    std::ofstream new_file(output_path, std::ios::out | std::ios::binary);
     if (!new_file.is_open())
         throw compexcp::CouldntOpenFile();
 

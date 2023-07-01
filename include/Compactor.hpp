@@ -33,12 +33,12 @@ private:
     static void count_char(string file_path, HashTable<TreeNodeChar> *result);
     static void huffman_algorithm(LinkedList<TreeNodeChar> &list);
     static void in_order(LinkedList<table> &table_char, std::string &bits, uint64_t &bit_len, unsigned int &bytes_size, TreeNodeChar *tree);
-    static void write_file_compress(string file_path, TreeNodeChar *tree, LinkedList<TreeNodeChar> &list);
+    static void write_file_compress(string input_path, string output_path, TreeNodeChar *tree, LinkedList<TreeNodeChar> &list);
     static uint8_t str2byte(string &str);
     static int32_t binary_search_table(table *vec, uint32_t size, string str);
 
 public:
-    static void compress(std::string file_path);
-    static void decompress(std::string file_path);
+    static void compress(string input_path, string output_path);
+    static void decompress(string input_path, string output_path);
 };
 ;
