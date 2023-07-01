@@ -360,7 +360,6 @@ void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, Linked
                     buffer_write[bw_index] = str2byte(bit_string);
                     bw_index++;
                 }
-                break;
             }
             delete[] buffer_read;
             buffer_read = temp_buffer;
@@ -377,9 +376,13 @@ void Compactor::write_file_compress(string file_path, TreeNodeChar *tree, Linked
         }
     }
 
-    if (bit_string.size() > 0) {
-        buffer_write[bw_index] = str2byte(bit_string);
-        new_file.write((char *) buffer_write, bw_index + 1);
+    if (bw_index > 0 || bit_string.size() > 0) {
+        while (bit_string.size() > 0) {
+            buffer_write[bw_index] = str2byte(bit_string);
+            bw_index++;
+        }
+
+        new_file.write((char *) buffer_write, bw_index);
     }
 
     delete[] buffer_read;
@@ -570,7 +573,7 @@ void Compactor::decompress(std::string file_path) {
             if (len - 1 - i >= BUFFER_SIZE)
                 file.read((char*) buffer, BUFFER_SIZE);
             else
-                file.read((char*) buffer, (len - i) % BUFFER_SIZE);
+                file.read((char*) buffer, (len - 1 - i) % BUFFER_SIZE);
             b_index = 0;
         }
     }

@@ -6,7 +6,7 @@ INC_DIR = ./include
 LIB_DIR = $(INC_DIR)/lib
 BIN_DIR = ./bin
 OBJ_DIR = ./obj
-CFLAGS = --std=c++11 -Wall -g
+CFLAGS = --std=c++11 -Wall -O0 -g
 TEST_DIR = $(SRC_DIR)/test
 EXE = $(BIN_DIR)/$(NAME)
 EXE_TEST = $(BIN_DIR)/$(TEST_NAME)
