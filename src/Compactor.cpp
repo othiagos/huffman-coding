@@ -1,6 +1,6 @@
 #include "Compactor.hpp"
 
-void Compactor::count_char(string file_path, HashTable<TreeNodeChar> *result) {
+void Compactor::count_char(string file_path, HashTable<TreeNode> *result) {
 
     std::ifstream file(file_path, std::ios::in);
     if (!file.is_open())
@@ -22,7 +22,7 @@ void Compactor::count_char(string file_path, HashTable<TreeNodeChar> *result) {
                 string str({(char) buffer[b_index]});
 
                 b_index++;
-                result->insert(TreeNodeChar(str));
+                result->insert(TreeNode(str));
             }
             else if (buffer[b_index] >> DISCARD_5BIT == UTF8_ENCODING_2BYTE) {
                 if (b_index + 1 >= BUFFER_SIZE)
@@ -32,7 +32,7 @@ void Compactor::count_char(string file_path, HashTable<TreeNodeChar> *result) {
 
                 i++;
                 b_index += 2;
-                result->insert(TreeNodeChar(str));
+                result->insert(TreeNode(str));
             }
             else if (buffer[b_index] >> DISCARD_4BIT == UTF8_ENCODING_3BYTE) {
                 if (b_index + 2 >= BUFFER_SIZE)
@@ -43,7 +43,7 @@ void Compactor::count_char(string file_path, HashTable<TreeNodeChar> *result) {
 
                 i += 2;
                 b_index += 3;
-                result->insert(TreeNodeChar(str));
+                result->insert(TreeNode(str));
             }
             else if (buffer[b_index] >> DISCARD_3BIT == UTF8_ENCODING_4BYTE) {
                 if (b_index + 3 >= BUFFER_SIZE)
@@ -53,10 +53,10 @@ void Compactor::count_char(string file_path, HashTable<TreeNodeChar> *result) {
 
                 i += 3;
                 b_index += 4;
-                result->insert(TreeNodeChar(str));
+                result->insert(TreeNode(str));
             }
-        } catch (htexcp::ItemExists<TreeNodeChar> &e) {
-            TreeNodeChar *item = e.get_item();
+        } catch (htexcp::ItemExists<TreeNode> &e) {
+            TreeNode *item = e.get_item();
             (*item)++;
         } catch (const compexcp::BufferEnd &e) {
             u_char *temp_buffer = new u_char[BUFFER_SIZE];
@@ -79,10 +79,10 @@ void Compactor::count_char(string file_path, HashTable<TreeNodeChar> *result) {
             i--;
 
             try {
-                result->insert(TreeNodeChar(str));
+                result->insert(TreeNode(str));
             }
-            catch(htexcp::ItemExists<TreeNodeChar> &e) {
-                TreeNodeChar *item = e.get_item();
+            catch(htexcp::ItemExists<TreeNode> &e) {
+                TreeNode *item = e.get_item();
                 (*item)++;
             }
 
@@ -99,16 +99,16 @@ void Compactor::count_char(string file_path, HashTable<TreeNodeChar> *result) {
     delete[] buffer;
 }
 
-void Compactor::huffman_algorithm(LinkedList<TreeNodeChar> &list) {
-   TreeNodeChar x;
-   TreeNodeChar y;
-   TreeNodeChar z;
+void Compactor::huffman_algorithm(LinkedList<TreeNode> &list) {
+   TreeNode x;
+   TreeNode y;
+   TreeNode z;
 
     int i;
     while (list.size() != 1) {
         x = list.pop_front();
         y = list.pop_front();
-        z = TreeNodeChar(x.get_count() + y.get_count(), x, y);
+        z = TreeNode(x.get_count() + y.get_count(), x, y);
 
         for (i = 0; i < list.size(); i++) {
             if (list[i].get_count() >= z.get_count()) {
@@ -126,7 +126,7 @@ void Compactor::huffman_algorithm(LinkedList<TreeNodeChar> &list) {
     }
 }
 
-void Compactor::in_order(LinkedList<table> &table_char, std::string &bits, uint64_t &bit_len, unsigned int &bytes_size, TreeNodeChar *tree) {
+void Compactor::in_order(LinkedList<table> &table_char, std::string &bits, uint64_t &bit_len, unsigned int &bytes_size, TreeNode *tree) {
     if(tree->get_right() != nullptr) {
         bits.push_back('0');
         in_order(table_char, bits, bit_len, bytes_size, tree->get_right());
@@ -183,7 +183,7 @@ int32_t Compactor::binary_search_table(table *vec, uint32_t size, string str) {
     return -1;
 }
 
-void Compactor::write_file_compress(string input_path, string output_path, TreeNodeChar *tree, LinkedList<TreeNodeChar> &list) {
+void Compactor::write_file_compress(string input_path, string output_path, TreeNode *tree, LinkedList<TreeNode> &list) {
     std::string bits = "";
     LinkedList<table> table_char;
     unsigned int bytes_size = 0;
@@ -216,7 +216,7 @@ void Compactor::write_file_compress(string input_path, string output_path, TreeN
     new_file.write((char *) &size, sizeof(char));
     new_file.write((char *) &bytes_size, sizeof(unsigned int));
 
-    for (TreeNodeChar node : list) {
+    for (TreeNode node : list) {
         i = node.get_count();
         new_file.write((char *) node.get_chars().c_str(), node.get_chars().size());
         new_file.write((char *) &i, size);
@@ -383,14 +383,14 @@ void Compactor::write_file_compress(string input_path, string output_path, TreeN
 }
 
 void Compactor::compress(string input_path, string output_path) {
-    HashTable<TreeNodeChar> table;
+    HashTable<TreeNode> table;
     count_char(input_path, &table);
 
-    LinkedList<TreeNodeChar> list;
+    LinkedList<TreeNode> list;
     table.get_list(list);
 
     QuickSort::sort(list);
-    LinkedList<TreeNodeChar> tree = LinkedList<TreeNodeChar>(list);
+    LinkedList<TreeNode> tree = LinkedList<TreeNode>(list);
 
     huffman_algorithm(tree);
     write_file_compress(input_path, output_path, &tree[0], list);
@@ -406,8 +406,8 @@ void Compactor::decompress(string input_path, string output_path) {
     uint32_t len;
     file.read((char *) &len, sizeof(uint32_t));
 
-    LinkedList<TreeNodeChar> list;
-    TreeNodeChar t;
+    LinkedList<TreeNode> list;
+    TreeNode t;
 
     u_char *buffer = new u_char[BUFFER_SIZE];
     if (len >= BUFFER_SIZE)
@@ -582,7 +582,7 @@ void Compactor::decompress(string input_path, string output_path) {
     
     file.read((char *)buffer, BUFFER_SIZE);
 
-    TreeNodeChar *tree = &list[0];
+    TreeNode *tree = &list[0];
     uint64_t count_bits = 0;
 
     for (b_index = 0; b_index < bytes; b_index++) {
