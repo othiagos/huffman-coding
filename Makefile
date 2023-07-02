@@ -18,7 +18,8 @@ OBJS = \
 	$(OBJ_DIR)/AVLTree.o
 
 TEST_OBJS = \
-	$(OBJ_DIR)/TestLinkedList.o
+	$(OBJ_DIR)/TestLinkedList.o \
+	$(OBJ_DIR)/TestQuickSort.o
 
 all: mkdir $(EXE)
 
