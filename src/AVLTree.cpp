@@ -6,10 +6,8 @@ TreeNode *AVLTree::create_node(std::string data) {
 }
 
 int AVLTree::max(int v1, int v2) {
-    if (v1 > v2)
-        return v1;
-    else
-        return v2;
+    if (v1 > v2) return v1;
+    else return v2;
 }
 
 int AVLTree::height(TreeNode *node) {
@@ -49,6 +47,7 @@ TreeNode *AVLTree::insert_node(TreeNode *node, std::string item) {
     if (node == nullptr) {
         return create_node(item);
     }
+
     if (node->get_chars() == item) {
         node->set_count(node->get_count() + 1);
     } else if (node->get_chars().compare(item) > 0) {
@@ -72,15 +71,14 @@ TreeNode *AVLTree::insert_node(TreeNode *node, std::string item) {
     return node;
 }
 
-TreeNode *AVLTree::delete_node(TreeNode *node, std::string element) {
+TreeNode *AVLTree::remove_node(TreeNode *node, std::string item) {
     if (node == nullptr) {
         return node;
     }
-    if (node->get_chars().compare(element) < 0) {
-        node->set_left(delete_node(node->get_left(), element));
-    } else if (node->get_chars().compare(element) > 0) {
-        node->set_right(delete_node(node->get_right(), element));
-
+    if (node->get_chars().compare(item) < 0) {
+        node->set_left(remove_node(node->get_left(), item));
+    } else if (node->get_chars().compare(item) > 0) {
+        node->set_right(remove_node(node->get_right(), item));
     } else {
         if (node->get_count() > 1) {
             node->set_count(node->get_count() - 1);
@@ -93,18 +91,10 @@ TreeNode *AVLTree::delete_node(TreeNode *node, std::string element) {
 
             TreeNode *temp = min_value(node->get_right());
             node->set_chars(temp->get_chars());
-            node->set_right(delete_node(node->get_right(), temp->get_chars()));
+            node->set_right(remove_node(node->get_right(), temp->get_chars()));
         }
     }
     return node;
-}
-
-void AVLTree::delete_nodes(TreeNode *node) {
-    if (node) {
-        delete_nodes(node->get_left());
-        delete_nodes(node->get_right());
-        delete node;
-    }
 }
 
 AVLTree::~AVLTree() {
@@ -117,7 +107,7 @@ void AVLTree::insert(std::string item) {
 }
 
 void AVLTree::remove(std::string item) {
-    _root = delete_node(_root, item);
+    _root = remove_node(_root, item);
 }
 
 TreeNode *AVLTree::get_root() {

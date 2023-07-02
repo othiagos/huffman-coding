@@ -20,9 +20,7 @@ private:
 
     TreeNode *insert_node(TreeNode *node, std::string item);
 
-    TreeNode *delete_node(TreeNode *node, std::string element);
-
-    void delete_nodes(TreeNode *node);
+    TreeNode *remove_node(TreeNode *node, std::string item);
 
 public:
     ~AVLTree();
