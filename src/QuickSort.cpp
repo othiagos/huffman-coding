@@ -1,9 +1,16 @@
 #include "QuickSort.hpp"
 
-void QuickSort::swap(TreeNode &value1, TreeNode &value2) {
-    TreeNode temp = value1;
-    value1 = value2;
-    value2 = temp;
+void QuickSort::swap(TreeNode *value1, TreeNode *value2) {
+    TreeNode *temp = new TreeNode();
+    temp->set_chars(value1->get_chars());
+    temp->set_count(value1->get_count());
+
+    value1->set_chars(value2->get_chars());
+    value1->set_count(value2->get_count());
+
+    value2->set_chars(temp->get_chars());
+    value2->set_count(temp->get_count());
+    delete temp;
 }
 
 void QuickSort::swap(table &value1, table &value2) {
@@ -12,12 +19,12 @@ void QuickSort::swap(table &value1, table &value2) {
     value2 = temp;
 }
 
-int QuickSort::partition(LinkedList<TreeNode> &list, const int &low, const int &high) {
-    TreeNode x = list[high];
+int QuickSort::partition(LinkedList<TreeNode*> &list, const int &low, const int &high) {
+    TreeNode *x = list[high];
     int i = low - 1;
 
     for (int j = low; j < high; j++) {
-        if (list[j].get_count() < x.get_count()) {
+        if (list[j]->get_count() < x->get_count()) {
             i++;
             swap(list[i], list[j]);
         }
@@ -40,7 +47,7 @@ int QuickSort::partition(LinkedList<table> &list, const int &low, const int &hig
     return i + 1;
 }
 
-void QuickSort::sort(LinkedList<TreeNode> &list, const int &low, const int &high) {
+void QuickSort::sort(LinkedList<TreeNode*> &list, const int &low, const int &high) {
     if (low < high) {
         int p = partition(list, low, high);
         sort(list, low, p - 1);
@@ -56,7 +63,7 @@ void QuickSort::sort(LinkedList<table> &list, const int &low, const int &high) {
     }
 }
 
-void QuickSort::sort(LinkedList<TreeNode> &list) {
+void QuickSort::sort(LinkedList<TreeNode*> &list) {
     sort(list, 0, list.size() - 1);
 }
 

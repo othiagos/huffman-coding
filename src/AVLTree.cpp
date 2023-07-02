@@ -99,17 +99,17 @@ TreeNode *AVLTree::delete_node(TreeNode *node, std::string element) {
     return node;
 }
 
-void AVLTree::delete_all_nodes(TreeNode *node) {
+void AVLTree::delete_nodes(TreeNode *node) {
     if (node) {
-        delete_all_nodes(node->get_left());
-        delete_all_nodes(node->get_right());
+        delete_nodes(node->get_left());
+        delete_nodes(node->get_right());
         delete node;
     }
 }
 
 AVLTree::~AVLTree() {
     if (this->_root != nullptr)
-        delete _root;
+        TreeNode::DeleteNode(_root);
 }
 
 void AVLTree::insert(std::string item) {

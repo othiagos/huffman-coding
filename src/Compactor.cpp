@@ -90,7 +90,7 @@ void Compactor::count_char(string file_path, AVLTree &result) {
     delete[] buffer;
 }
 
-void Compactor::tree2list(TreeNode *tree, LinkedList<TreeNode> &list) {
+void Compactor::tree2list(TreeNode *tree, LinkedList<TreeNode*> &list) {
     if (tree != nullptr) {
         if (tree->get_left() != nullptr)
             tree2list(tree->get_left(), list);
@@ -98,27 +98,29 @@ void Compactor::tree2list(TreeNode *tree, LinkedList<TreeNode> &list) {
         if (tree->get_right() != nullptr)
             tree2list(tree->get_right(), list);
 
-        TreeNode node;
-        node.set_chars(tree->get_chars());
-        node.set_count(tree->get_count());
+        TreeNode *node = new TreeNode();
+        node->set_chars(tree->get_chars());
+        node->set_count(tree->get_count());
 
         list.push_back(node);
     }
 }
 
-void Compactor::huffman_algorithm(LinkedList<TreeNode> &list) {
-   TreeNode x;
-   TreeNode y;
-   TreeNode z;
+void Compactor::huffman_algorithm(LinkedList<TreeNode*> &list) {
+   TreeNode *x;
+   TreeNode *y;
+   TreeNode *z;
 
     int32_t i;
     while (list.size() != 1) {
         x = list.pop_front();
         y = list.pop_front();
-        z = TreeNode(x.get_count() + y.get_count(), x, y);
+        z = new TreeNode(x->get_count() + y->get_count());
+        z->set_right(x);
+        z->set_left(y);
 
         for (i = 0; i < list.size(); i++) {
-            if (list[i].get_count() >= z.get_count()) {
+            if (list[i]->get_count() >= z->get_count()) {
                 list.insert(z, i);
                 break;
             }
@@ -193,12 +195,12 @@ int32_t Compactor::binary_search_table(table *vec, uint32_t size, string str) {
 }
 
 void Compactor::write_file_compress(string input_path, string output_path, TreeNode *tree,
-        LinkedList<TreeNode> &list) {
+        LinkedList<TreeNode*> &list) {
 
     string bits = "";
     LinkedList<table> table_char;
     uint32_t bytes_size = 0;
-    uint32_t max_item = list[list.size() - 1].get_count();
+    uint32_t max_item = list[list.size() - 1]->get_count();
     uint64_t bit_len = 0;
     
     in_order(table_char, bits, bit_len, bytes_size, tree);
@@ -227,9 +229,9 @@ void Compactor::write_file_compress(string input_path, string output_path, TreeN
     new_file.write((char *) &size, sizeof(uint8_t));
     new_file.write((char *) &bytes_size, sizeof(uint32_t));
 
-    for (TreeNode node : list) {
-        i = node.get_count();
-        new_file.write((char *) node.get_chars().c_str(), node.get_chars().size());
+    for (TreeNode *node : list) {
+        i = node->get_count();
+        new_file.write((char *) node->get_chars().c_str(), node->get_chars().size());
         new_file.write((char *) &i, size);
     }
 
@@ -398,14 +400,26 @@ void Compactor::compress(string input_path, string output_path) {
 
     count_char(input_path, tree);
     
-    LinkedList<TreeNode> list;
+    LinkedList<TreeNode *> list;
     tree2list(tree.get_root(), list);
 
     QuickSort::sort(list);
-    LinkedList<TreeNode> cp_list = LinkedList<TreeNode>(list);
+    LinkedList<TreeNode*> cp_list;
+
+    for (TreeNode *node : list) {
+        TreeNode *n = new TreeNode(*node);
+        cp_list.push_back(n);
+    }
 
     huffman_algorithm(cp_list);
-    write_file_compress(input_path, output_path, &cp_list[0], list);
+    write_file_compress(input_path, output_path, cp_list[0], list);
+
+    for (TreeNode *node : list)
+        TreeNode::DeleteNode(node);
+
+    for (TreeNode *node : cp_list)
+        TreeNode::DeleteNode(node);
+    
 }
 
 void Compactor::decompress(string input_path, string output_path) {
@@ -418,8 +432,8 @@ void Compactor::decompress(string input_path, string output_path) {
     uint32_t len;
     file.read((char *) &len, sizeof(uint32_t));
 
-    LinkedList<TreeNode> list;
-    TreeNode t;
+    LinkedList<TreeNode*> list;
+    TreeNode *t;
 
     u_char *buffer = new u_char[BUFFER_SIZE];
     if (len >= BUFFER_SIZE)
@@ -435,14 +449,15 @@ void Compactor::decompress(string input_path, string output_path) {
                     throw compexcp::DecompressBufferOverflow(
                         (b_index + size + 1) % BUFFER_SIZE, 1, size);
 
-                t.set_chars({(char) buffer[b_index]});
+                t = new TreeNode();
+                t->set_chars({(char) buffer[b_index]});
 
                 uint64_t number = 0;
                 for (uint8_t j = 0; j < size; j++) {
                     number += buffer[b_index + 1 + j] << 8 * j;
                 }
                 
-                t.set_count(number);
+                t->set_count(number);
 
                 list.push_back(t);
                 i += size;
@@ -453,14 +468,15 @@ void Compactor::decompress(string input_path, string output_path) {
                     throw compexcp::DecompressBufferOverflow(
                         (b_index + size + 2) % BUFFER_SIZE, 2, size);
 
-                t.set_chars({(char) buffer[b_index], (char) buffer[b_index + 1]});
+                t = new TreeNode();
+                t->set_chars({(char) buffer[b_index], (char) buffer[b_index + 1]});
                 
                 uint64_t number = 0;
                 for (uint8_t j = 0; j < size; j++) {
                     number += buffer[b_index + 2 + j] << 8 * j;
                 }
                 
-                t.set_count(number);
+                t->set_count(number);
 
                 list.push_back(t);
                 i += 1 + size;
@@ -471,7 +487,8 @@ void Compactor::decompress(string input_path, string output_path) {
                     throw compexcp::DecompressBufferOverflow(
                         (b_index + size + 3) % BUFFER_SIZE, 3, size);
 
-                t.set_chars({(char) buffer[b_index],(char) buffer[b_index + 1],
+                t =  new TreeNode();
+                t->set_chars({(char) buffer[b_index],(char) buffer[b_index + 1],
                     (char) buffer[b_index + 2]});
                 
                 uint64_t number = 0;
@@ -479,7 +496,7 @@ void Compactor::decompress(string input_path, string output_path) {
                     number += buffer[b_index + 3 + j] << 8 * j;
                 }
                 
-                t.set_count(number);
+                t->set_count(number);
 
                 list.push_back(t);
                 i += 2 + size;
@@ -490,7 +507,8 @@ void Compactor::decompress(string input_path, string output_path) {
                     throw compexcp::DecompressBufferOverflow(
                         (b_index + size + 4) % BUFFER_SIZE, 4, size);
 
-                t.set_chars({(char) buffer[b_index],(char) buffer[b_index + 1], 
+                t = new TreeNode();
+                t->set_chars({(char) buffer[b_index],(char) buffer[b_index + 1], 
                     (char) buffer[b_index + 2], (char) buffer[b_index + 3]});
                 
                 uint64_t number = 0;
@@ -498,7 +516,7 @@ void Compactor::decompress(string input_path, string output_path) {
                     number += buffer[b_index + 4 + j] << 8 * j;
                 }
                 
-                t.set_count(number);
+                t->set_count(number);
 
                 list.push_back(t);
                 i += 3 + size;
@@ -557,8 +575,9 @@ void Compactor::decompress(string input_path, string output_path) {
                 }
             }
             
-            t.set_chars(str);
-            t.set_count(number);
+            t = new TreeNode();
+            t->set_chars(str);
+            t->set_count(number);
 
             list.push_back(t);
             i -= 1;
@@ -594,7 +613,7 @@ void Compactor::decompress(string input_path, string output_path) {
     
     file.read((char *)buffer, BUFFER_SIZE);
 
-    TreeNode *tree = &list[0];
+    TreeNode *tree = list[0];
     uint64_t count_bits = 0;
 
     for (b_index = 0; b_index < bytes; b_index++) {
@@ -615,7 +634,7 @@ void Compactor::decompress(string input_path, string output_path) {
                         bw_index = 0;
                     }
                 }
-                tree = &list[0];
+                tree = list[0];
             }
 
             if (buffer[b_index] >> (7 - j) & 1) {
@@ -642,6 +661,9 @@ void Compactor::decompress(string input_path, string output_path) {
 
     delete[] buffer;
     delete[] buffer_write;
+
+    for (TreeNode *node : list)
+        TreeNode::DeleteNode(node);
 
     new_file.close();
     file.close();

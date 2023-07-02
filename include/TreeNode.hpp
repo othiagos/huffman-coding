@@ -18,9 +18,12 @@ private:
 public:
     TreeNode();
     ~TreeNode();
+    
     TreeNode(const TreeNode &o);
     TreeNode(std::string _chars);
-    TreeNode(unsigned int count, TreeNode right, TreeNode left);
+    TreeNode(unsigned int count);
+    
+    static void DeleteNode(TreeNode *node);
 
     bool operator==(const TreeNode& o);
 

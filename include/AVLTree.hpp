@@ -22,7 +22,7 @@ private:
 
     TreeNode *delete_node(TreeNode *node, std::string element);
 
-    void delete_all_nodes(TreeNode *node);
+    void delete_nodes(TreeNode *node);
 
 public:
     ~AVLTree();

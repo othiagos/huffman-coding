@@ -7,11 +7,14 @@ TreeNode::TreeNode() {
     this->_left = nullptr;
 }
 
-TreeNode::~TreeNode() {
-    if (this->_right != nullptr)
-        delete _right;
-    if (this->_left != nullptr)
-        delete _left;
+TreeNode::~TreeNode() { }
+
+void TreeNode::DeleteNode(TreeNode *node) {
+    if (node != nullptr) {
+        DeleteNode(node->get_right());
+        DeleteNode(node->get_left());
+        delete node;
+    }
 }
 
 TreeNode::TreeNode(std::string chars) {
@@ -29,11 +32,9 @@ TreeNode::TreeNode(const TreeNode &o) {
     this->_left = (o._left != nullptr) ? new TreeNode(*o._left) : nullptr;
 }
 
-TreeNode::TreeNode(unsigned int count, TreeNode right, TreeNode left) {
+TreeNode::TreeNode(unsigned int count) {
     this->_chars = "";
     this->_count = count;
-    this->_right = new TreeNode(right);
-    this->_left = new TreeNode(left);
 }
 
 bool TreeNode::operator==(const TreeNode& o) {
