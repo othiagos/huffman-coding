@@ -3,7 +3,6 @@
 #include <cmath>
 #include <string>
 
-
 /**
  * @struct table
  * @brief Represents a table structure with characters and their encodings.
