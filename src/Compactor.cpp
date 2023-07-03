@@ -55,7 +55,7 @@ void Compactor::count_char(string file_path, AVLTree &result) {
                 b_index += 4;
                 result.insert(str);
             }
-            else if (buffer[b_index] >> DISCARD_6BIT == UTF8_ENCODING_XBYTE) 
+            else
                 throw compexcp::FileNotUTF8();
 
         } catch (const compexcp::BufferOverflow &e) {
@@ -110,9 +110,9 @@ void Compactor::tree2list(TreeNode *tree, LinkedList<TreeNode*> &list) {
 }
 
 void Compactor::huffman_algorithm(LinkedList<TreeNode*> &list) {
-   TreeNode *x;
-   TreeNode *y;
-   TreeNode *z;
+    TreeNode *x;
+    TreeNode *y;
+    TreeNode *z;
 
     int32_t i;
     while (list.size() != 1) {
