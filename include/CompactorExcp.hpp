@@ -38,13 +38,21 @@ namespace compexcp {
         }
     };
 
-    class CouldNotOpenFile : public std::exception {
-        
+    class CouldNotOpenFile : public std::exception { 
     public:
         CouldNotOpenFile() { }
 
         const char* what() const throw() {
             return "Could not open the file";
+        }
+    };
+
+    class FileNotUTF8 : public std::exception { 
+    public:
+        FileNotUTF8() { }
+
+        const char* what() const throw() {
+            return "Text file does not have UTF-8 encoding";
         }
     };
 

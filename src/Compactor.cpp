@@ -55,6 +55,9 @@ void Compactor::count_char(string file_path, AVLTree &result) {
                 b_index += 4;
                 result.insert(str);
             }
+            else if (buffer[b_index] >> DISCARD_6BIT == UTF8_ENCODING_XBYTE) 
+                throw compexcp::FileNotUTF8();
+
         } catch (const compexcp::BufferOverflow &e) {
             u_char *temp_buffer = new u_char[BUFFER_SIZE];
             file.read((char *)temp_buffer, BUFFER_SIZE);

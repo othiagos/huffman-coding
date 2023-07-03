@@ -44,6 +44,8 @@ int main(int argc, char *argv[]) {
         std::cerr << e.what() << std::endl;
     } catch (const compexcp::CouldNotOpenFile &e) {
         std::cerr << e.what() << std::endl;
+    } catch (const compexcp::FileNotUTF8 &e) {
+        std::cerr << e.what() << std::endl;
     }
 
     return 0;
